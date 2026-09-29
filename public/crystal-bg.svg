@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- Glass Sphere 1 Gradient (Bottom-Left) -->
+    <radialGradient id="sphereGrad1" cx="32%" cy="28%" r="68%" fx="28%" fy="24%">
+      <stop offset="0%" stop-color="#D8BFFF" />
+      <stop offset="35%" stop-color="#9A5CF0" />
+      <stop offset="65%" stop-color="#7B3FD6" />
+      <stop offset="90%" stop-color="#3B1774" />
+      <stop offset="100%" stop-color="#220B4A" />
+    </radialGradient>
+
+    <!-- Glass Sphere 2 Gradient (Bottom-Right) -->
+    <radialGradient id="sphereGrad2" cx="30%" cy="26%" r="70%" fx="26%" fy="22%">
+      <stop offset="0%" stop-color="#D8BFFF" />
+      <stop offset="38%" stop-color="#9A5CF0" />
+      <stop offset="68%" stop-color="#7B3FD6" />
+      <stop offset="92%" stop-color="#3B1774" />
+      <stop offset="100%" stop-color="#220B4A" />
+    </radialGradient>
+
+    <!-- Crystal Shard Gradient -->
+    <linearGradient id="shardGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B58CFF" />
+      <stop offset="100%" stop-color="#3B1A7A" />
+    </linearGradient>
+
+    <linearGradient id="shardGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#CBB2FF" />
+      <stop offset="50%" stop-color="#844CE6" />
+      <stop offset="100%" stop-color="#3B1A7A" />
+    </linearGradient>
+
+    <linearGradient id="shardGrad3" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#B58CFF" />
+      <stop offset="100%" stop-color="#2A1058" />
+    </linearGradient>
+
+    <!-- Specular Highlight Ellipse Gradient -->
+    <radialGradient id="highlightGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Base Amethyst Background -->
+  <rect width="1920" height="1080" fill="#1A0B33" />
+
+  <!-- Large Angular Crystal Facets (#21104A to #40207F) -->
+  <g id="crystal-facets" stroke="#4A268C" stroke-width="0.75" stroke-opacity="0.45" stroke-linejoin="round">
+    <!-- Top-Left & Upper Facets -->
+    <polygon points="0,0 480,0 260,280 0,210" fill="#24114D" />
+    <polygon points="480,0 960,0 640,320 260,280" fill="#2E1663" />
+    <polygon points="960,0 1440,0 1180,260 640,320" fill="#261254" />
+    <polygon points="1440,0 1920,0 1920,320 1560,220 1180,260" fill="#32196A" />
+
+    <!-- Upper-Middle Facets -->
+    <polygon points="0,210 260,280 180,620 0,540" fill="#2C165F" />
+    <polygon points="260,280 640,320 520,680 180,620" fill="#391D75" />
+    <polygon points="640,320 1180,260 1020,590 520,680" fill="#40207F" />
+    <polygon points="1180,260 1560,220 1460,580 1020,590" fill="#351A71" />
+    <polygon points="1560,220 1920,320 1920,640 1460,580" fill="#281358" />
+
+    <!-- Center-Lower Facets -->
+    <polygon points="180,620 520,680 380,950 0,900 0,540" fill="#21104A" />
+    <polygon points="520,680 1020,590 920,980 380,950" fill="#311867" />
+    <polygon points="1020,590 1460,580 1340,940 920,980" fill="#3C1E7C" />
+    <polygon points="1460,580 1920,640 1920,960 1580,920 1340,940" fill="#251252" />
+
+    <!-- Bottom Facets -->
+    <polygon points="0,900 380,950 310,1080 0,1080" fill="#2A145A" />
+    <polygon points="380,950 920,980 840,1080 310,1080" fill="#371B73" />
+    <polygon points="920,980 1340,940 1380,1080 840,1080" fill="#2D1661" />
+    <polygon points="1340,940 1580,920 1680,1080 1380,1080" fill="#3A1D77" />
+    <polygon points="1580,920 1920,960 1920,1080 1680,1080" fill="#22104B" />
+  </g>
+
+  <!-- Small Crystal Shards (#B58CFF to #3B1A7A) -->
+  <g id="crystal-shards">
+    <!-- Shard 1: Near bottom left edge -->
+    <polygon points="95,780 135,715 155,795 115,835" fill="url(#shardGrad1)" stroke="#D8BFFF" stroke-width="1" stroke-opacity="0.6" />
+    <polygon points="135,715 155,795 175,760" fill="#E4D4FF" fill-opacity="0.35" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.5" />
+
+    <!-- Shard 2: Near bottom right edge -->
+    <polygon points="1790,740 1835,670 1860,755 1815,795" fill="url(#shardGrad2)" stroke="#D8BFFF" stroke-width="1" stroke-opacity="0.6" />
+    <polygon points="1835,670 1860,755 1880,715" fill="#E4D4FF" fill-opacity="0.35" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.5" />
+
+    <!-- Shard 3: Small floating facet shard -->
+    <polygon points="340,920 370,875 390,930 360,955" fill="url(#shardGrad3)" stroke="#C4B5FD" stroke-width="1" stroke-opacity="0.5" />
+  </g>
+
+  <!-- Glass Spheres (Placed strictly in bottom corners, away from central content) -->
+  <g id="glass-spheres">
+    
+    <!-- Sphere 1: Bottom Left Corner (Center at x=190, y=930, Radius 130) -->
+    <g id="sphere-bottom-left">
+      <!-- Outer rim ambient glow -->
+      <circle cx="190" cy="930" r="132" fill="none" stroke="#A78BFA" stroke-width="1.5" stroke-opacity="0.35" />
+      <!-- Main Glass Sphere Body -->
+      <circle cx="190" cy="930" r="130" fill="url(#sphereGrad1)" stroke="#E9D5FF" stroke-width="1.2" stroke-opacity="0.55" />
+      <!-- Secondary internal reflection at bottom edge -->
+      <path d="M 100,980 Q 190,1050 280,980 Q 190,1025 100,980 Z" fill="#A78BFA" opacity="0.3" />
+      <!-- Primary Glossy Soft White Highlight Ellipse -->
+      <ellipse cx="148" cy="880" rx="38" ry="22" transform="rotate(-32 148 880)" fill="url(#highlightGlow)" />
+      <!-- Sharp Pinpoint Specular Glint -->
+      <circle cx="140" cy="874" r="5" fill="#FFFFFF" opacity="0.9" />
+    </g>
+
+    <!-- Sphere 2: Bottom Right Corner (Center at x=1740, y=940, Radius 120) -->
+    <g id="sphere-bottom-right">
+      <!-- Outer rim ambient glow -->
+      <circle cx="1740" cy="940" r="122" fill="none" stroke="#A78BFA" stroke-width="1.5" stroke-opacity="0.35" />
+      <!-- Main Glass Sphere Body -->
+      <circle cx="1740" cy="940" r="120" fill="url(#sphereGrad2)" stroke="#E9D5FF" stroke-width="1.2" stroke-opacity="0.55" />
+      <!-- Secondary internal reflection at bottom edge -->
+      <path d="M 1660,985 Q 1740,1050 1820,985 Q 1740,1025 1660,985 Z" fill="#A78BFA" opacity="0.3" />
+      <!-- Primary Glossy Soft White Highlight Ellipse -->
+      <ellipse cx="1702" cy="894" rx="34" ry="20" transform="rotate(-30 1702 894)" fill="url(#highlightGlow)" />
+      <!-- Sharp Pinpoint Specular Glint -->
+      <circle cx="1695" cy="888" r="4.5" fill="#FFFFFF" opacity="0.9" />
+    </g>
+
+  </g>
+</svg>

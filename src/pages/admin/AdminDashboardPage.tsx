@@ -1,0 +1,274 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  FolderKanban, 
+  CheckCircle, 
+  Smartphone, 
+  Apple, 
+  Users, 
+  TrendingUp, 
+  ArrowUpRight, 
+  Plus, 
+  Activity, 
+  ShieldCheck, 
+  ExternalLink,
+  Layers,
+  Star
+} from 'lucide-react';
+import { useApp } from '../../context/AppContext';
+
+export const AdminDashboardPage: React.FC = () => {
+  const { projects, users, activities, currentUser } = useApp();
+
+  const totalProjects = projects.length;
+  const publishedProjects = projects.filter(p => p.published).length;
+  const androidApps = projects.filter(p => p.platforms.includes('Android')).length;
+  const iosApps = projects.filter(p => p.platforms.includes('iOS')).length;
+  const totalDevelopers = users.filter(u => u.role === 'Developer' || u.role === 'Owner').length;
+
+  const stats = [
+    { label: 'Total Projects', value: totalProjects, icon: FolderKanban, color: 'text-sky-400', bg: 'bg-sky-500/10' },
+    { label: 'Published Projects', value: publishedProjects, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'Android Apps', value: androidApps, icon: Smartphone, color: 'text-green-400', bg: 'bg-green-500/10' },
+    { label: 'iOS Apps', value: iosApps, icon: Apple, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+    { label: 'Total Developers', value: totalDevelopers, icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+  ];
+
+  return (
+    <div className="space-y-8 p-4 sm:p-8 max-w-7xl mx-auto">
+      
+      {/* Welcome Banner */}
+      <div className="p-8 sm:p-10 rounded-[32px] sm:rounded-[40px] bg-[#0F0E11] border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="space-y-2 relative z-10">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-violet-400">
+              &#125; Active Session: {currentUser.role}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30">
+              Live Mock
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            Welcome back, {currentUser.name}
+          </h1>
+          <p className="text-xs sm:text-sm text-white/60 max-w-xl">
+            You are managing Verado's application catalog and product releases.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 relative z-10">
+          <Link
+            to="/admin/projects/new"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all"
+          >
+            <Plus className="w-4 h-4 text-violet-400" />
+            <span>+ Add Project</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {stats.map((s, idx) => {
+          const Icon = s.icon;
+          return (
+            <div key={idx} className="p-5 rounded-[24px] bg-[#0F0E11] border border-white/10 shadow-sm flex flex-col justify-between space-y-4 hover:border-violet-500/30 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-white/50">{s.label}</span>
+                <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                  <Icon className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-3xl font-black text-white">{s.value}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Simulated Analytics & Platform Distribution Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left Chart: Monthly Downloads Trend */}
+        <div className="lg:col-span-8 p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider text-violet-400 mb-1">
+                <span>&#125;</span>
+                <span>Telemetry Trends</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                Monthly Downloads Growth (2026)
+              </h3>
+              <p className="text-xs text-white/50 mt-0.5">Aggregated App Store & Google Play Telemetry</p>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-violet-500/10 text-violet-300 border border-violet-500/20">
+              <TrendingUp className="w-3.5 h-3.5 text-violet-400" />
+              <span>+34.2% MoM</span>
+            </div>
+          </div>
+
+          {/* SVG Bar Chart with glowing heights */}
+          <div className="h-56 flex items-end justify-between gap-3 pt-6 pb-2 px-2 border-b border-white/10">
+            {[
+              { month: 'Apr', val: 42, count: '320k' },
+              { month: 'May', val: 56, count: '450k' },
+              { month: 'Jun', val: 68, count: '540k' },
+              { month: 'Jul', val: 80, count: '690k' },
+              { month: 'Aug', val: 92, count: '810k' },
+              { month: 'Sep', val: 100, count: '940k' },
+            ].map((bar, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                <span className="text-[10px] text-violet-300 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
+                  {bar.count}
+                </span>
+                <div 
+                  className="w-full max-w-[48px] rounded-t-xl bg-gradient-to-t from-violet-600 to-violet-400 group-hover:from-violet-500 group-hover:to-purple-300 transition-all duration-300 shadow-lg shadow-violet-500/20"
+                  style={{ height: `${bar.val * 1.6}px` }}
+                />
+                <span className="font-mono text-xs text-white/50">{bar.month}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-white/50 pt-1 font-mono">
+            <span>Peak Month: September (ShoeCheck v3.2.1 Launch)</span>
+            <span className="font-bold text-white">Total: 5.8M+ Downloads</span>
+          </div>
+        </div>
+
+        {/* Right Chart: Platform Distribution */}
+        <div className="lg:col-span-4 p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider text-violet-400 mb-1">
+              <span>&#125;</span>
+              <span>Ecosystem</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">Platform Breakdown</h3>
+            <p className="text-xs text-white/50 mt-0.5">Device Operating System Split</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs mb-1.5 font-medium">
+                <span className="flex items-center gap-1.5 text-white/90">
+                  <Apple className="w-3.5 h-3.5 text-violet-400" /> iOS (Apple App Store)
+                </span>
+                <span className="font-mono font-bold text-violet-400">58%</span>
+              </div>
+              <div className="h-2 rounded-full bg-[#16151B] border border-white/5 overflow-hidden">
+                <div className="h-full bg-violet-500 rounded-full w-[58%]" />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs mb-1.5 font-medium">
+                <span className="flex items-center gap-1.5 text-white/90">
+                  <Smartphone className="w-3.5 h-3.5 text-violet-400" /> Android (Google Play)
+                </span>
+                <span className="font-mono font-bold text-violet-400">42%</span>
+              </div>
+              <div className="h-2 rounded-full bg-[#16151B] border border-white/5 overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full w-[42%]" />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#16151B] border border-white/10 text-xs space-y-1">
+            <span className="font-mono text-xs uppercase tracking-wider text-white block">Engine Consistency</span>
+            <p className="text-white/60 text-[11px] leading-relaxed">
+              Cross-platform code reuse between iOS and Android currently averages 89.4% with native platform shims.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Bottom Grid: Recent Projects & Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Recent Projects Table */}
+        <div className="lg:col-span-7 p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="text-violet-400 font-mono">&#125;</span>
+              <span>Recent Projects</span>
+            </h3>
+            <Link to="/admin/projects" className="font-mono text-xs uppercase tracking-wider text-violet-400 hover:text-violet-300 font-semibold">
+              Manage All ({projects.length}) →
+            </Link>
+          </div>
+
+          <div className="divide-y divide-white/5 overflow-x-auto">
+            {projects.slice(0, 5).map((project) => (
+              <div key={project.id} className="py-3.5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <img src={project.logo} alt={project.name} className="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-bold text-xs text-white truncate hover:text-violet-300 transition-colors">
+                      {project.name}
+                    </div>
+                    <div className="text-[11px] text-white/50 flex items-center gap-2">
+                      <span className="font-mono">{project.category}</span>
+                      <span>•</span>
+                      <span className="font-mono">{project.platforms}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold ${
+                    project.published 
+                      ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30' 
+                      : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                  }`}>
+                    {project.published ? 'Published' : 'Draft'}
+                  </span>
+                  
+                  <Link
+                    to={`/admin/projects/${project.id}/edit`}
+                    className="px-3 py-1.5 rounded-full bg-[#16151B] hover:bg-black text-white/80 hover:text-white border border-white/10 hover:border-violet-400/50 transition-colors font-mono text-xs uppercase"
+                    title="Edit project"
+                  >
+                    Edit
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Recent Activity Feed */}
+        <div className="lg:col-span-5 p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              <span className="text-violet-400 font-mono">&#125;</span>
+              <Activity className="w-4 h-4 text-violet-400" />
+              <span>Recent Activity Feed</span>
+            </h3>
+            <span className="text-[10px] text-white/40 font-mono uppercase">Real-Time Mock</span>
+          </div>
+
+          <div className="space-y-3.5">
+            {activities.slice(0, 5).map((act) => (
+              <div key={act.id} className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#16151B] border border-white/5">
+                <img src={act.avatar} alt={act.user} className="w-7 h-7 rounded-lg object-cover ring-1 ring-white/10 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0 text-xs">
+                  <div className="text-white/80">
+                    <strong className="text-white font-semibold">{act.user}</strong> {act.action}
+                  </div>
+                  <div className="text-[11px] text-violet-400 font-mono font-medium truncate mt-0.5">
+                    {act.target}
+                  </div>
+                  <div className="text-[10px] text-white/40 font-mono mt-0.5">{act.timestamp}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+};
