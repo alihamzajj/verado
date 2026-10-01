@@ -14,6 +14,9 @@ interface AppContextType {
   addProject: (newProject: Omit<Project, 'id' | 'lastUpdated' | 'rating' | 'reviewsCount' | 'downloads'>) => Project;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+  archiveProject: (id: string) => void;
+  restoreProject: (id: string) => void;
+  approveAndPublishProject: (id: string) => void;
   toggleProjectPublish: (id: string) => void;
   toggleProjectFeatured: (id: string) => void;
   
@@ -163,50 +166,167 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleTheme = () => {};
 
   const addProject = (projectData: Omit<Project, 'id' | 'lastUpdated' | 'rating' | 'reviewsCount' | 'downloads'>): Project => {
+    const isOwner = currentUser.role === 'Owner';
     const newId = projectData.name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random() * 1000);
+    
+    // Non-owner team submissions are created as Drafts pending Owner review
+    const effectivePublished = isOwner ? Boolean(projectData.published) : false;
+    const reviewStatus = isOwner ? 'approved' : 'pending_review';
+
     const createdProject: Project = {
       ...projectData,
       id: newId,
+      published: effectivePublished,
+      isArchived: false,
+      reviewStatus,
+      submittedBy: currentUser.name,
       rating: 5.0,
       reviewsCount: 1,
       downloads: '100+',
       lastUpdated: 'Just now',
     };
+
     setProjects(prev => [createdProject, ...prev]);
     upsertProjectToSupabase(createdProject);
-    addActivity({
-      user: currentUser.name,
-      avatar: currentUser.avatar,
-      action: `Created new project "${createdProject.name}"`,
-      target: createdProject.platforms,
-      type: 'project',
-    });
-    addNotification(`Project "${createdProject.name}" created successfully!`, 'success');
+
+    if (isOwner) {
+      addActivity({
+        user: currentUser.name,
+        avatar: currentUser.avatar,
+        action: `Created and ${effectivePublished ? 'published' : 'drafted'} project "${createdProject.name}"`,
+        target: createdProject.platforms,
+        type: 'project',
+      });
+      addNotification(`Project "${createdProject.name}" created successfully!`, 'success');
+    } else {
+      addActivity({
+        user: currentUser.name,
+        avatar: currentUser.avatar,
+        action: `Submitted project "${createdProject.name}" for Owner review`,
+        target: 'Pending Review',
+        type: 'project',
+      });
+      addNotification(`Project "${createdProject.name}" saved as Draft. Submitted for Owner review & publishing.`, 'info');
+    }
+
     return createdProject;
   };
 
   const updateProject = (id: string, updates: Partial<Project>) => {
+    const isOwner = currentUser.role === 'Owner';
     setProjects(prev => prev.map(p => {
       if (p.id === id) {
-        const updated = { ...p, ...updates, lastUpdated: 'Just now' };
+        const safeUpdates = { ...updates };
+        // If non-owner edits, protect live publishing status
+        if (!isOwner && safeUpdates.published === true && !p.published) {
+          safeUpdates.published = false;
+          safeUpdates.reviewStatus = 'pending_review';
+        }
+        const updated = { ...p, ...safeUpdates, lastUpdated: 'Just now' };
         upsertProjectToSupabase(updated);
         return updated;
       }
       return p;
     }));
+
     addActivity({
       user: currentUser.name,
       avatar: currentUser.avatar,
-      action: `Updated project settings`,
-      target: updates.name || id,
+      action: `Updated project "${updates.name || id}"`,
+      target: updates.category || 'Catalog Settings',
       type: 'project',
     });
     addNotification('Project details updated!', 'success');
   };
 
+  // Archive Project (Soft Delete: hides from public, preserves data, reversible)
+  const archiveProject = (id: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can archive projects.', 'error');
+      return;
+    }
+    const target = projects.find(p => p.id === id);
+    if (!target) return;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === id) {
+        const archived = { ...p, isArchived: true, published: false, lastUpdated: 'Archived just now' };
+        upsertProjectToSupabase(archived);
+        return archived;
+      }
+      return p;
+    }));
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Archived project "${target.name}" (Safe Storage)`,
+      target: 'Catalog Archive',
+      type: 'project',
+    });
+    addNotification(`Project "${target.name}" archived. Hidden from public showcase but safely preserved.`, 'info');
+  };
+
+  // Restore Project from Archive
+  const restoreProject = (id: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can restore projects.', 'error');
+      return;
+    }
+    const target = projects.find(p => p.id === id);
+    if (!target) return;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === id) {
+        const restored = { ...p, isArchived: false, published: false, reviewStatus: 'draft' as const, lastUpdated: 'Restored just now' };
+        upsertProjectToSupabase(restored);
+        return restored;
+      }
+      return p;
+    }));
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Restored project "${target.name}" from archive`,
+      target: 'Catalog Drafts',
+      type: 'project',
+    });
+    addNotification(`Project "${target.name}" restored to drafts. Ready for review.`, 'success');
+  };
+
+  // Approve & Publish Project (1-click Owner action)
+  const approveAndPublishProject = (id: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can approve and publish projects.', 'error');
+      return;
+    }
+    const target = projects.find(p => p.id === id);
+    if (!target) return;
+
+    setProjects(prev => prev.map(p => {
+      if (p.id === id) {
+        const approved = { ...p, published: true, isArchived: false, reviewStatus: 'approved' as const, lastUpdated: 'Published just now' };
+        upsertProjectToSupabase(approved);
+        return approved;
+      }
+      return p;
+    }));
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Approved & published project "${target.name}" to live showcase`,
+      target: 'Live Showcase',
+      type: 'deploy',
+    });
+    addNotification(`Project "${target.name}" is now LIVE on the public showcase!`, 'success');
+  };
+
+  // Permanent Delete (Hard Delete: Purges from cloud & state)
   const deleteProject = (id: string) => {
     if (currentUser.role !== 'Owner') {
-      addNotification('Access Denied: Only the Studio Owner has authority to delete projects.', 'error');
+      addNotification('Access Denied: Only the Studio Owner has authority to permanently delete projects.', 'error');
       return;
     }
     const target = projects.find(p => p.id === id);
@@ -216,20 +336,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addActivity({
         user: currentUser.name,
         avatar: currentUser.avatar,
-        action: `Deleted project "${target.name}"`,
+        action: `Permanently deleted project "${target.name}"`,
         target: target.category,
         type: 'project',
       });
-      addNotification(`Project "${target.name}" was removed by Owner.`, 'info');
+      addNotification(`Project "${target.name}" was permanently deleted by Owner.`, 'info');
     }
   };
 
   const toggleProjectPublish = (id: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Review Required: Only the Studio Owner can publish projects to the live showcase.', 'warning');
+      return;
+    }
     setProjects(prev => prev.map(p => {
       if (p.id === id) {
         const newStatus = !p.published;
-        const updated = { ...p, published: newStatus };
+        const updated = { 
+          ...p, 
+          published: newStatus, 
+          reviewStatus: newStatus ? ('approved' as const) : ('draft' as const),
+          lastUpdated: 'Just now'
+        };
         upsertProjectToSupabase(updated);
+        addActivity({
+          user: currentUser.name,
+          avatar: currentUser.avatar,
+          action: `${newStatus ? 'Published' : 'Unpublished'} project "${p.name}"`,
+          target: newStatus ? 'Live Showcase' : 'Draft',
+          type: 'project',
+        });
         addNotification(`Project "${p.name}" is now ${newStatus ? 'Published' : 'Draft'}`, 'info');
         return updated;
       }
@@ -344,6 +480,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addProject,
         updateProject,
         deleteProject,
+        archiveProject,
+        restoreProject,
+        approveAndPublishProject,
         toggleProjectPublish,
         toggleProjectFeatured,
         users,

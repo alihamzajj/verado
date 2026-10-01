@@ -20,8 +20,8 @@ import { DeviceMockup } from '../../components/common/DeviceMockup';
 
 export const HomePage: React.FC = () => {
   const { projects } = useApp();
-  const featuredProjects = projects.filter(p => p.featured && p.published);
-  const latestProjects = projects.filter(p => p.published).slice(0, 6);
+  const featuredProjects = projects.filter(p => p.featured && p.published && !p.isArchived);
+  const latestProjects = projects.filter(p => p.published && !p.isArchived).slice(0, 6);
 
   const [activeHeroApp, setActiveHeroApp] = useState<'brainwave' | 'pulsefit' | 'shoecheck'>('brainwave');
 

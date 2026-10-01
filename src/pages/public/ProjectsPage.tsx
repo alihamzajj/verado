@@ -24,8 +24,8 @@ export const ProjectsPage: React.FC = () => {
 
   const filteredProjects = useMemo(() => {
     return projects.filter((project) => {
-      // Must be published for public view
-      if (!project.published) return false;
+      // Must be published and not archived for public view
+      if (!project.published || project.isArchived) return false;
 
       // Search match
       const query = searchQuery.toLowerCase().trim();

@@ -38,6 +38,9 @@ export interface Project {
   lastUpdated: string;
   accentColor: string;
   badge?: string;
+  isArchived?: boolean;
+  reviewStatus?: 'approved' | 'pending_review' | 'draft';
+  submittedBy?: string;
 }
 
 export type UserRole = 'Owner' | 'Developer' | 'Editor' | 'Content Manager';

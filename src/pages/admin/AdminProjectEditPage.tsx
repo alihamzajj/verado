@@ -10,7 +10,9 @@ import {
   Loader2,
   Cloud,
   CheckCircle2,
-  Film
+  Film,
+  Lock,
+  Clock
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { uploadMediaToSupabase } from '../../lib/supabase';
@@ -21,7 +23,8 @@ export const AdminProjectEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
   const navigate = useNavigate();
-  const { projects, addProject, updateProject, addNotification, isSupabaseLive } = useApp();
+  const { projects, addProject, updateProject, addNotification, isSupabaseLive, currentUser } = useApp();
+  const isOwner = currentUser.role === 'Owner';
 
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -254,9 +257,24 @@ export const AdminProjectEditPage: React.FC = () => {
           className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all cursor-pointer"
         >
           <Save className="w-4 h-4 text-violet-400" />
-          <span>Save Changes</span>
+          <span>{isOwner ? (isEditing ? 'Save Changes' : 'Create Application') : (isEditing ? 'Submit Updates' : 'Submit for Review')}</span>
         </button>
       </div>
+
+      {/* Non-Owner Draft Mode Alert Banner */}
+      {!isOwner && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-amber-200">
+              <strong className="text-white">Draft & Review Mode:</strong> As a {currentUser.role}, this application will be saved as Draft and submitted for Studio Owner review before going live.
+            </span>
+          </div>
+          <span className="font-mono text-[10px] uppercase font-bold text-amber-300 bg-amber-500/20 px-3 py-1 rounded-full whitespace-nowrap border border-amber-500/30">
+            Owner Approval Required
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
@@ -349,25 +367,36 @@ export const AdminProjectEditPage: React.FC = () => {
 
             {/* Toggles */}
             <div className="pt-2 flex flex-wrap items-center gap-6">
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
-                <input
-                  type="checkbox"
-                  checked={formData.published}
-                  onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
-                  className="w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
-                />
-                <span>Published (Visible on Public Marketplace)</span>
-              </label>
+              {isOwner ? (
+                <>
+                  <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
+                    <input
+                      type="checkbox"
+                      checked={formData.published}
+                      onChange={(e) => setFormData({ ...formData, published: e.target.checked })}
+                      className="w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
+                    />
+                    <span>Published (Visible on Public Showcase)</span>
+                  </label>
 
-              <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
-                <input
-                  type="checkbox"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                  className="w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
-                />
-                <span>Featured Showcase on Homepage</span>
-              </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
+                    <input
+                      type="checkbox"
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                      className="w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
+                    />
+                    <span>Featured Showcase on Homepage</span>
+                  </label>
+                </>
+              ) : (
+                <div className="p-3.5 rounded-xl bg-[#16151B] border border-white/10 flex items-center gap-3 text-xs w-full">
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span className="text-white/70">
+                    <strong className="text-white">Publication Status:</strong> Submissions are drafted as <span className="text-amber-300 font-mono font-bold">Draft</span>. The Studio Owner has exclusive authority to review and approve projects for live publication.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -717,7 +746,7 @@ export const AdminProjectEditPage: React.FC = () => {
               type="submit"
               className="px-7 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl cursor-pointer"
             >
-              {isEditing ? 'Save Changes' : 'Create Application'}
+              {isOwner ? (isEditing ? 'Save Changes' : 'Create Application') : (isEditing ? 'Submit Updates for Review' : 'Submit Application for Review')}
             </button>
           </div>
 

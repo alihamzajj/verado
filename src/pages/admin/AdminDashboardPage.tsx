@@ -13,25 +13,29 @@ import {
   ShieldCheck, 
   ExternalLink,
   Layers,
-  Star
+  Star,
+  Clock,
+  Archive,
+  Bell
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const AdminDashboardPage: React.FC = () => {
   const { projects, users, activities, currentUser } = useApp();
+  const isOwner = currentUser.role === 'Owner';
 
-  const totalProjects = projects.length;
-  const publishedProjects = projects.filter(p => p.published).length;
-  const androidApps = projects.filter(p => p.platforms.includes('Android')).length;
-  const iosApps = projects.filter(p => p.platforms.includes('iOS')).length;
+  const totalActive = projects.filter(p => !p.isArchived).length;
+  const publishedProjects = projects.filter(p => p.published && !p.isArchived).length;
+  const draftsCount = projects.filter(p => !p.published && !p.isArchived).length;
+  const archivedCount = projects.filter(p => p.isArchived).length;
   const totalDevelopers = users.filter(u => u.role === 'Developer' || u.role === 'Owner').length;
 
   const stats = [
-    { label: 'Total Projects', value: totalProjects, icon: FolderKanban, color: 'text-sky-400', bg: 'bg-sky-500/10' },
-    { label: 'Published Projects', value: publishedProjects, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { label: 'Android Apps', value: androidApps, icon: Smartphone, color: 'text-green-400', bg: 'bg-green-500/10' },
-    { label: 'iOS Apps', value: iosApps, icon: Apple, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-    { label: 'Total Developers', value: totalDevelopers, icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { label: 'Active Projects', value: totalActive, icon: FolderKanban, color: 'text-sky-400', bg: 'bg-sky-500/10' },
+    { label: 'Live Published', value: publishedProjects, icon: CheckCircle, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'Drafts / In Review', value: draftsCount, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { label: 'Safe Archive', value: archivedCount, icon: Archive, color: 'text-violet-400', bg: 'bg-violet-500/10' },
+    { label: 'Studio Team', value: totalDevelopers, icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10' },
   ];
 
   return (
@@ -67,6 +71,36 @@ export const AdminDashboardPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Owner Pending Review Callout Banner */}
+      {isOwner && draftsCount > 0 && (
+        <div className="p-5 rounded-[28px] bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs uppercase font-bold text-amber-300 tracking-wider">
+                  Owner Approval Queue
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-amber-400/20 text-amber-300">
+                  {draftsCount} Pending Review
+                </span>
+              </div>
+              <p className="text-xs text-amber-100/90 mt-0.5">
+                New application submissions or edits by team members are waiting for your approval before going live on the showcase.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin/projects"
+            className="px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-black font-mono text-xs uppercase font-bold tracking-wider transition-colors shrink-0 shadow-lg shadow-amber-500/20 self-start sm:self-auto cursor-pointer"
+          >
+            Review & Publish →
+          </Link>
+        </div>
+      )}
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -249,21 +283,34 @@ export const AdminDashboardPage: React.FC = () => {
             <span className="text-[10px] text-white/40 font-mono uppercase">Real-Time Mock</span>
           </div>
 
-          <div className="space-y-3.5">
-            {activities.slice(0, 5).map((act) => (
-              <div key={act.id} className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#16151B] border border-white/5">
-                <img src={act.avatar} alt={act.user} className="w-7 h-7 rounded-lg object-cover ring-1 ring-white/10 shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0 text-xs">
-                  <div className="text-white/80">
-                    <strong className="text-white font-semibold">{act.user}</strong> {act.action}
+          <div className="space-y-3">
+            {activities.slice(0, 8).map((act) => {
+              const typeColor = 
+                act.type === 'deploy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                act.type === 'user' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                act.type === 'code' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                'bg-violet-500/10 text-violet-400 border-violet-500/20';
+
+              return (
+                <div key={act.id} className="flex items-start gap-3 p-3.5 rounded-2xl bg-[#16151B] border border-white/5 hover:border-white/10 transition-colors">
+                  <img src={act.avatar} alt={act.user} className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/10 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0 text-xs">
+                    <div className="text-white/80 flex items-center justify-between gap-2">
+                      <span className="truncate">
+                        <strong className="text-white font-semibold">{act.user}</strong> {act.action}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono uppercase font-bold border shrink-0 ${typeColor}`}>
+                        {act.type}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-violet-300 font-mono font-medium truncate mt-1">
+                      {act.target}
+                    </div>
+                    <div className="text-[10px] text-white/40 font-mono mt-0.5">{act.timestamp}</div>
                   </div>
-                  <div className="text-[11px] text-violet-400 font-mono font-medium truncate mt-0.5">
-                    {act.target}
-                  </div>
-                  <div className="text-[10px] text-white/40 font-mono mt-0.5">{act.timestamp}</div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
