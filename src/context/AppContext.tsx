@@ -25,8 +25,9 @@ interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   loginAsUser: (userId: string) => void;
-  addUser: (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }) => void;
+  addUser: (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }) => User | null;
   deleteUser: (userId: string) => void;
+  toggleUserStatus: (userId: string) => void;
   updateUserPermissions: (userId: string, permissions: Partial<Permissions>, role?: UserRole) => void;
   updateUserProfile: (userId: string, updates: { name?: string; email?: string; avatar?: string; role?: UserRole }) => void;
   
@@ -422,10 +423,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }) => {
+  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }): User | null => {
     if (currentUser.role !== 'Owner') {
       addNotification('Access Denied: Only the Studio Owner can add team members.', 'error');
-      return;
+      return null;
     }
 
     const trimmedName = userData.name.trim();
@@ -433,15 +434,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!trimmedName || !trimmedEmail) {
       addNotification('Name and email are required to add a team member.', 'error');
-      return;
+      return null;
     }
 
-    if (users.some(u => u.email.toLowerCase() === trimmedEmail.toLowerCase())) {
-      addNotification('A team member with this email already exists.', 'error');
-      return;
-    }
-
-    const newId = 'u-' + Math.random().toString(36).substring(2, 8);
     const isTargetOwner = userData.role === 'Owner';
 
     const permissions: Permissions = {
@@ -461,6 +456,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const assignedAvatar = userData.avatar || getInitialsAvatar(trimmedName);
 
+    // Prevent add conflict: if email already exists, smoothly update and reactivate them
+    const existingIndex = users.findIndex(u => u.email.toLowerCase() === trimmedEmail.toLowerCase());
+    if (existingIndex >= 0) {
+      const existingUser = users[existingIndex];
+      const updatedUser: User = {
+        ...existingUser,
+        name: trimmedName,
+        role: userData.role,
+        avatar: assignedAvatar || existingUser.avatar,
+        status: 'Active',
+        codeAccess: userData.codeAccess || existingUser.codeAccess,
+        permissions: {
+          ...existingUser.permissions,
+          ...permissions,
+          deleteProjects: isTargetOwner,
+          manageTeam: isTargetOwner,
+        },
+      };
+
+      setUsers(prev => prev.map((u, i) => i === existingIndex ? updatedUser : u));
+
+      addActivity({
+        user: currentUser.name,
+        avatar: currentUser.avatar,
+        action: `Re-authorized & updated member "${updatedUser.name}" (${updatedUser.role})`,
+        target: updatedUser.role,
+        type: 'user',
+      });
+
+      addNotification(`Team member "${updatedUser.name}" successfully updated & allowed as Active!`, 'success');
+      return updatedUser;
+    }
+
+    const newId = 'u-' + Math.random().toString(36).substring(2, 8);
     const newUser: User = {
       id: newId,
       name: trimmedName,
@@ -484,6 +513,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     addNotification(`Team member "${newUser.name}" added successfully as ${newUser.role}!`, 'success');
+    return newUser;
+  };
+
+  const toggleUserStatus = (userId: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can change member status.', 'error');
+      return;
+    }
+
+    const target = users.find(u => u.id === userId);
+    if (!target) return;
+    if (target.id === currentUser.id) {
+      addNotification('Cannot suspend your own active owner session.', 'error');
+      return;
+    }
+
+    const newStatus = target.status === 'Active' ? 'Suspended' : 'Active';
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+
+    if (newStatus === 'Active') {
+      addNotification(`Allowed ${target.name}! Green Active button enabled with full studio access.`, 'success');
+      addActivity({
+        user: currentUser.name,
+        avatar: currentUser.avatar,
+        action: `Allowed & activated team member "${target.name}"`,
+        target: target.role,
+        type: 'user',
+      });
+    } else {
+      addNotification(`Suspended ${target.name}. Studio dashboard access temporarily paused.`, 'info');
+      addActivity({
+        user: currentUser.name,
+        avatar: currentUser.avatar,
+        action: `Suspended team member "${target.name}"`,
+        target: target.role,
+        type: 'user',
+      });
+    }
   };
 
   const deleteUser = (userId: string) => {
@@ -652,6 +719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginAsUser,
         addUser,
         deleteUser,
+        toggleUserStatus,
         updateUserPermissions,
         updateUserProfile,
         activities,

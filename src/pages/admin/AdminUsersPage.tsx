@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   ShieldCheck, 
@@ -24,6 +25,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { User, Permissions, UserRole } from '../../types';
 import { Modal } from '../../components/common/Modal';
+import { EmailInviteModal } from '../../components/common/EmailInviteModal';
 import { getInitialsAvatar, AVATAR_GRADIENTS } from '../../lib/avatar';
 
 const ROLE_PRESETS = [
@@ -50,6 +52,8 @@ export const AdminUsersPage: React.FC = () => {
     users, 
     currentUser, 
     setCurrentUser, 
+    loginAsUser,
+    toggleUserStatus,
     updateUserPermissions, 
     updateUserProfile,
     addUser, 
@@ -57,10 +61,12 @@ export const AdminUsersPage: React.FC = () => {
     addNotification 
   } = useApp();
 
+  const navigate = useNavigate();
   const isOwner = currentUser.role === 'Owner';
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [inviteModalUser, setInviteModalUser] = useState<User | null>(null);
   
   // New member form state
   const [newMember, setNewMember] = useState<{
@@ -178,7 +184,7 @@ export const AdminUsersPage: React.FC = () => {
       customScope: newMemberCustomScope.trim() || undefined,
     };
 
-    addUser({
+    const createdUser = addUser({
       name: newMember.name,
       email: newMember.email,
       role: effectiveRole,
@@ -201,6 +207,10 @@ export const AdminUsersPage: React.FC = () => {
     setShowCustomPhotoInput(false);
     setSelectedGradient('amethyst');
     setIsAddModalOpen(false);
+
+    if (createdUser) {
+      setInviteModalUser(createdUser);
+    }
   };
 
   type BooleanPermissionKey = 'viewProjects' | 'addProjects' | 'editProjects' | 'codeEditor' | 'createBranch' | 'previewChanges' | 'mergeToProduction' | 'deployProduction';
@@ -358,12 +368,35 @@ export const AdminUsersPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Status */}
+                    {/* Status: Green Active Button */}
                     <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                        {user.status}
-                      </span>
+                      {user.status === 'Active' ? (
+                        <button
+                          type="button"
+                          onClick={() => isOwner && !isCurrent && toggleUserStatus(user.id)}
+                          disabled={!isOwner || isCurrent}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
+                            isOwner && !isCurrent ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
+                          } bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-emerald-500/10`}
+                          title={isOwner && !isCurrent ? 'Allowed & Active. Click to Suspend.' : 'Allowed & Active'}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
+                          <span>Active</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => isOwner && toggleUserStatus(user.id)}
+                          disabled={!isOwner}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
+                            isOwner ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
+                          } bg-amber-500/15 text-amber-300 border border-amber-500/30`}
+                          title={isOwner ? 'Suspended. Click to Allow and activate green Active status.' : 'Suspended'}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-amber-400" />
+                          <span>Suspended</span>
+                        </button>
+                      )}
                     </td>
 
                     {/* Release Access Badge */}
@@ -407,17 +440,35 @@ export const AdminUsersPage: React.FC = () => {
                           <span>Edit & Access</span>
                         </button>
 
-                        {/* Persona switcher */}
+                        {/* Intuitive Session / Login Button */}
+                        {isCurrent ? (
+                          <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                            <Check className="w-3 h-3 text-emerald-400" />
+                            <span>You (Active)</span>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              loginAsUser(user.id);
+                              navigate('/admin');
+                            }}
+                            className="px-3.5 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-[11px] uppercase tracking-wider font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                            title={`Log in and enter dashboard as ${user.name}`}
+                          >
+                            <UserCheck className="w-3.5 h-3.5 text-violet-400" />
+                            <span>Log in as Member</span>
+                          </button>
+                        )}
+
+                        {/* Email Invite Notification Button */}
                         <button
-                          onClick={() => setCurrentUser(user)}
-                          disabled={isCurrent}
-                          className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-                            isCurrent
-                              ? 'bg-white/5 text-white/30 cursor-not-allowed border border-white/5'
-                              : 'bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-bold'
-                          }`}
+                          type="button"
+                          onClick={() => setInviteModalUser(user)}
+                          className="p-2 rounded-full bg-[#16151B] hover:bg-black text-white/70 hover:text-violet-300 border border-white/10 hover:border-violet-400/50 transition-colors cursor-pointer"
+                          title={`View email invitation and dashboard access link for ${user.name}`}
                         >
-                          {isCurrent ? 'Active' : 'Switch'}
+                          <Mail className="w-3.5 h-3.5 text-violet-400" />
                         </button>
 
                         {/* Remove Team Member button (Owner Only, Cannot delete self) */}
@@ -1166,6 +1217,18 @@ export const AdminUsersPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Email Invite Modal */}
+      <EmailInviteModal
+        isOpen={Boolean(inviteModalUser)}
+        onClose={() => setInviteModalUser(null)}
+        user={inviteModalUser}
+        onAcceptAndLaunch={(user) => {
+          loginAsUser(user.id);
+          setInviteModalUser(null);
+          navigate('/admin');
+        }}
+      />
 
     </div>
   );

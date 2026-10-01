@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   FolderKanban, 
@@ -16,13 +16,30 @@ import {
   Star,
   Clock,
   Archive,
-  Bell
+  Bell,
+  Trash2,
+  Mail,
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { Modal } from '../../components/common/Modal';
+import { EmailInviteModal } from '../../components/common/EmailInviteModal';
+import { User } from '../../types';
 
 export const AdminDashboardPage: React.FC = () => {
-  const { projects, users, activities, currentUser } = useApp();
+  const { 
+    projects, 
+    users, 
+    activities, 
+    currentUser, 
+    deleteUser, 
+    toggleUserStatus, 
+    loginAsUser 
+  } = useApp();
   const isOwner = currentUser.role === 'Owner';
+  const [employeeToDelete, setEmployeeToDelete] = useState<User | null>(null);
+  const [dashboardInviteUser, setDashboardInviteUser] = useState<User | null>(null);
 
   const totalActive = projects.filter(p => !p.isArchived).length;
   const publishedProjects = projects.filter(p => p.published && !p.isArchived).length;
@@ -315,6 +332,208 @@ export const AdminDashboardPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Studio Team & Direct Access (Owner direct remove, green active button, invite email & member login) */}
+      <div className="p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+          <div>
+            <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider text-violet-400 mb-1">
+              <span>&#125;</span>
+              <Users className="w-4 h-4 text-violet-400" />
+              <span>Studio Team & Authorization Gateway</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              Studio Members & Access Control
+            </h3>
+            <p className="text-xs text-white/50">
+              {isOwner 
+                ? 'Owner authority: Remove employees directly from dashboard, toggle green active status, inspect invitations, and log in directly.' 
+                : 'Active collaborative team members in the studio.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              to="/admin/users"
+              className="px-4 py-2 rounded-full bg-[#16151B] hover:bg-black border border-white/10 hover:border-violet-400/50 text-white font-mono text-xs uppercase tracking-wider transition-colors"
+            >
+              Full Permissions Matrix →
+            </Link>
+          </div>
+        </div>
+
+        {/* Members List */}
+        <div className="divide-y divide-white/5 overflow-x-auto">
+          {users.map((member) => {
+            const isCurrent = member.id === currentUser.id;
+            return (
+              <div key={member.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <img
+                    src={member.avatar}
+                    alt={member.name}
+                    className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/10 shrink-0"
+                  />
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-xs text-white truncate">{member.name}</span>
+                      {isCurrent && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                          You
+                        </span>
+                      )}
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono uppercase font-bold ${
+                        member.role === 'Owner'
+                          ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                          : member.role === 'Developer'
+                          ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
+                          : member.role === 'Editor'
+                          ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                          : member.role === 'Content Manager'
+                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-violet-500/10 text-violet-200 border border-violet-500/30'
+                      }`}>
+                        {member.role}
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-mono text-white/50 flex items-center gap-2">
+                      <span>{member.email}</span>
+                      {member.permissions?.customScope && (
+                        <>
+                          <span>•</span>
+                          <span className="text-violet-300/80 truncate max-w-[200px]" title={member.permissions.customScope}>
+                            ↳ {member.permissions.customScope}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto font-mono">
+                  {/* Green Active Button */}
+                  {member.status === 'Active' ? (
+                    <button
+                      type="button"
+                      onClick={() => isOwner && !isCurrent && toggleUserStatus(member.id)}
+                      disabled={!isOwner || isCurrent}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
+                        isOwner && !isCurrent ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
+                      } bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-emerald-500/10`}
+                      title={isOwner && !isCurrent ? 'Allowed & Active. Click to Suspend.' : 'Allowed & Active'}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
+                      <span>Active</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => isOwner && toggleUserStatus(member.id)}
+                      disabled={!isOwner}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
+                        isOwner ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
+                      } bg-amber-500/15 text-amber-300 border border-amber-500/30`}
+                      title={isOwner ? 'Suspended. Click to Allow and activate green Active status.' : 'Suspended'}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      <span>Suspended</span>
+                    </button>
+                  )}
+
+                  {/* Log in as Member button */}
+                  {isCurrent ? (
+                    <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-emerald-400" />
+                      <span>You (Active)</span>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => loginAsUser(member.id)}
+                      className="px-3.5 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 text-[11px] font-mono uppercase font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      title={`Log in to dashboard as ${member.name}`}
+                    >
+                      <UserCheck className="w-3.5 h-3.5 text-violet-400" />
+                      <span>Log in as Member</span>
+                    </button>
+                  )}
+
+                  {/* Email Invite Button */}
+                  <button
+                    type="button"
+                    onClick={() => setDashboardInviteUser(member)}
+                    className="p-1.5 rounded-full bg-[#16151B] hover:bg-black text-white/70 hover:text-violet-300 border border-white/10 hover:border-violet-400/50 transition-colors cursor-pointer"
+                    title={`View email invitation & dashboard access link for ${member.name}`}
+                  >
+                    <Mail className="w-3.5 h-3.5 text-violet-400" />
+                  </button>
+
+                  {/* Owner Remove Employee Button directly from Dashboard */}
+                  {isOwner && !isCurrent && (
+                    <button
+                      type="button"
+                      onClick={() => setEmployeeToDelete(member)}
+                      className="p-1.5 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                      title={`Remove employee "${member.name}" directly from dashboard`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Remove Employee Confirmation Modal (Dashboard) */}
+      {employeeToDelete && (
+        <Modal
+          isOpen={Boolean(employeeToDelete)}
+          onClose={() => setEmployeeToDelete(null)}
+          title="Remove Team Member"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+              <p>
+                Are you sure you want to remove <strong className="text-white">{employeeToDelete.name}</strong> ({employeeToDelete.email}) from the studio team?
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setEmployeeToDelete(null)}
+                className="px-4 py-2 rounded-full bg-[#16151B] hover:bg-black border border-white/10 text-white/80 hover:text-white text-xs font-mono uppercase tracking-wider cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteUser(employeeToDelete.id);
+                  setEmployeeToDelete(null);
+                }}
+                className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer"
+              >
+                Confirm Remove
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Email Invite Modal (Dashboard) */}
+      <EmailInviteModal
+        isOpen={Boolean(dashboardInviteUser)}
+        onClose={() => setDashboardInviteUser(null)}
+        user={dashboardInviteUser}
+        onAcceptAndLaunch={(user) => {
+          loginAsUser(user.id);
+          setDashboardInviteUser(null);
+        }}
+      />
 
     </div>
   );
