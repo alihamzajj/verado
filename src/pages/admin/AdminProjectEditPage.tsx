@@ -59,7 +59,7 @@ export const AdminProjectEditPage: React.FC = () => {
     playStoreUrl: 'https://play.google.com/store/apps',
     appStoreUrl: 'https://apps.apple.com/app',
     websiteUrl: 'https://example.com',
-    githubUrl: 'https://github.com/verado',
+    githubUrl: '',
     version: '1.0.0',
     size: '42.5 MB',
     minAndroid: 'Android 10.0+',
@@ -91,7 +91,7 @@ export const AdminProjectEditPage: React.FC = () => {
         playStoreUrl: existingProject.playStoreUrl,
         appStoreUrl: existingProject.appStoreUrl,
         websiteUrl: existingProject.websiteUrl,
-        githubUrl: existingProject.githubUrl,
+        githubUrl: existingProject.githubUrl || '',
         version: existingProject.version,
         size: existingProject.size,
         minAndroid: existingProject.minAndroid,
@@ -713,22 +713,12 @@ export const AdminProjectEditPage: React.FC = () => {
                 />
               </div>
 
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block font-mono text-xs uppercase tracking-wider text-white/70 mb-2">Product Website URL</label>
                 <input
                   type="text"
                   value={formData.websiteUrl}
                   onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs text-white focus:outline-none focus:border-violet-400 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block font-mono text-xs uppercase tracking-wider text-white/70 mb-2">GitHub Repo URL</label>
-                <input
-                  type="text"
-                  value={formData.githubUrl}
-                  onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs text-white focus:outline-none focus:border-violet-400 transition-colors"
                 />
               </div>
