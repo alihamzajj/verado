@@ -16,12 +16,34 @@ import {
   Mail,
   User as UserIcon,
   Palette,
-  Camera
+  Camera,
+  Edit3,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { User, Permissions, UserRole } from '../../types';
 import { Modal } from '../../components/common/Modal';
 import { getInitialsAvatar, AVATAR_GRADIENTS } from '../../lib/avatar';
+
+const ROLE_PRESETS = [
+  { value: 'Developer', label: 'Developer', desc: 'Engineering & Catalog Drafting' },
+  { value: 'Editor', label: 'Editor', desc: 'Release Notes & Copywriting' },
+  { value: 'Content Manager', label: 'Content Manager', desc: 'Media & Storefront Assets' },
+  { value: 'UI/UX Designer', label: 'UI/UX Designer', desc: 'Design Systems & App Visuals' },
+  { value: 'QA Specialist', label: 'QA Specialist', desc: 'Testing, Quality & Bug Validation' },
+  { value: 'Product Manager', label: 'Product Manager', desc: 'Roadmaps & Application Specs' },
+  { value: 'Owner', label: 'Owner', desc: 'Full Executive & Delete Authority' },
+];
+
+const ROLE_SUGGESTIONS = [
+  'Lead Flutter Engineer',
+  'Senior iOS Developer',
+  'UI/UX Designer',
+  'DevOps Architect',
+  'QA Specialist',
+  'Product Marketing Lead',
+];
 
 export const AdminUsersPage: React.FC = () => {
   const { 
@@ -44,7 +66,7 @@ export const AdminUsersPage: React.FC = () => {
   const [newMember, setNewMember] = useState<{
     name: string;
     email: string;
-    role: UserRole;
+    role: string;
     codeAccess: 'Full Access' | 'Read Only' | 'Locked';
   }>({
     name: '',
@@ -53,12 +75,30 @@ export const AdminUsersPage: React.FC = () => {
     codeAccess: 'Full Access',
   });
 
+  const [newMemberRoleMode, setNewMemberRoleMode] = useState<'preset' | 'custom'>('preset');
+  const [newMemberCustomRole, setNewMemberCustomRole] = useState<string>('');
+  const [newMemberCustomScope, setNewMemberCustomScope] = useState<string>('');
+  const [showAddPermissions, setShowAddPermissions] = useState<boolean>(false);
+  const [newMemberPermissions, setNewMemberPermissions] = useState<Permissions>({
+    viewProjects: true,
+    addProjects: true,
+    editProjects: true,
+    createBranch: true,
+    previewChanges: true,
+    codeEditor: true,
+    mergeToProduction: false,
+    deployProduction: false,
+  });
+
   const [selectedGradient, setSelectedGradient] = useState<string>('amethyst');
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string>('');
   const [showCustomPhotoInput, setShowCustomPhotoInput] = useState<boolean>(false);
 
   // Modal local state for editing permissions & profile
-  const [modalRole, setModalRole] = useState<UserRole>('Developer');
+  const [modalRole, setModalRole] = useState<string>('Developer');
+  const [modalRoleMode, setModalRoleMode] = useState<'preset' | 'custom'>('preset');
+  const [modalCustomRole, setModalCustomRole] = useState<string>('');
+  const [modalCustomScope, setModalCustomScope] = useState<string>('');
   const [editName, setEditName] = useState<string>('');
   const [editEmail, setEditEmail] = useState<string>('');
   const [editAvatar, setEditAvatar] = useState<string>('');
@@ -71,6 +111,7 @@ export const AdminUsersPage: React.FC = () => {
     editProjects: true,
     createBranch: true,
     previewChanges: true,
+    codeEditor: true,
     mergeToProduction: false,
     deployProduction: false,
   });
@@ -81,7 +122,11 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
     setSelectedUser(user);
+    const isPreset = ROLE_PRESETS.some(p => p.value === user.role);
     setModalRole(user.role);
+    setModalRoleMode(isPreset ? 'preset' : 'custom');
+    setModalCustomRole(isPreset ? '' : user.role);
+    setModalCustomScope(user.permissions.customScope || '');
     setModalPermissions({ ...user.permissions });
     setEditName(user.name);
     setEditEmail(user.email);
@@ -96,13 +141,19 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
     if (selectedUser) {
+      const finalRole = (modalRoleMode === 'custom' ? modalCustomRole.trim() : modalRole) || 'Developer';
       const finalAvatar = editAvatar.trim() || getInitialsAvatar(editName, editGradient);
-      updateUserPermissions(selectedUser.id, modalPermissions, modalRole);
+      const finalPermissions: Permissions = {
+        ...modalPermissions,
+        customScope: modalCustomScope.trim() || undefined,
+      };
+
+      updateUserPermissions(selectedUser.id, finalPermissions, finalRole);
       updateUserProfile(selectedUser.id, {
         name: editName.trim() || selectedUser.name,
         email: editEmail.trim() || selectedUser.email,
         avatar: finalAvatar,
-        role: modalRole,
+        role: finalRole,
       });
       setSelectedUser(null);
     }
@@ -119,14 +170,21 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
 
+    const effectiveRole = (newMemberRoleMode === 'custom' ? newMemberCustomRole.trim() : newMember.role) || 'Developer';
     const finalAvatar = customPhotoUrl.trim() || getInitialsAvatar(newMember.name, selectedGradient);
+
+    const finalPermissions: Permissions = {
+      ...newMemberPermissions,
+      customScope: newMemberCustomScope.trim() || undefined,
+    };
 
     addUser({
       name: newMember.name,
       email: newMember.email,
-      role: newMember.role,
+      role: effectiveRole,
       codeAccess: newMember.codeAccess,
       avatar: finalAvatar,
+      permissions: finalPermissions,
     });
 
     setNewMember({
@@ -135,16 +193,23 @@ export const AdminUsersPage: React.FC = () => {
       role: 'Developer',
       codeAccess: 'Full Access',
     });
+    setNewMemberRoleMode('preset');
+    setNewMemberCustomRole('');
+    setNewMemberCustomScope('');
+    setShowAddPermissions(false);
     setCustomPhotoUrl('');
     setShowCustomPhotoInput(false);
     setSelectedGradient('amethyst');
     setIsAddModalOpen(false);
   };
 
-  const permissionItems: { key: keyof Permissions; label: string; desc: string }[] = [
+  type BooleanPermissionKey = 'viewProjects' | 'addProjects' | 'editProjects' | 'codeEditor' | 'createBranch' | 'previewChanges' | 'mergeToProduction' | 'deployProduction';
+
+  const permissionItems: { key: BooleanPermissionKey; label: string; desc: string }[] = [
     { key: 'viewProjects', label: 'View Projects', desc: 'Allows viewing of public and private app specs' },
     { key: 'addProjects', label: 'Add Projects', desc: 'Can register new mobile applications in catalog' },
     { key: 'editProjects', label: 'Edit Projects', desc: 'Can modify project metadata, screenshots, and URLs' },
+    { key: 'codeEditor', label: 'Code Editor', desc: 'Access and edit source code in online IDE workspace' },
     { key: 'createBranch', label: 'Create Branch', desc: 'Allows branching feature pipelines in workspace' },
     { key: 'previewChanges', label: 'Preview Changes', desc: 'Can generate and inspect live preview artifacts' },
     { key: 'mergeToProduction', label: 'Merge to Production', desc: 'Permission to merge changes into main catalog' },
@@ -269,17 +334,28 @@ export const AdminUsersPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Role */}
+                    {/* Role & Permissions Scope */}
                     <td className="py-4 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold ${
-                        user.role === 'Owner' 
-                          ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
-                          : user.role === 'Developer'
-                          ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
-                          : 'bg-[#16151B] text-white/70 border border-white/10'
-                      }`}>
-                        {user.role}
-                      </span>
+                      <div className="space-y-1">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold ${
+                          user.role === 'Owner' 
+                            ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                            : user.role === 'Developer'
+                            ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
+                            : user.role === 'Editor'
+                            ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                            : user.role === 'Content Manager'
+                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-violet-500/10 text-violet-200 border border-violet-500/30'
+                        }`}>
+                          {user.role}
+                        </span>
+                        {user.permissions?.customScope && (
+                          <div className="text-[10px] font-mono text-white/50 max-w-[200px] truncate" title={user.permissions.customScope}>
+                            ↳ <span className="text-violet-300/80">{user.permissions.customScope}</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status */}
@@ -503,20 +579,120 @@ export const AdminUsersPage: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
-                Assigned Role
+            {/* Assigned Role: Categories vs Custom Role */}
+            <div className="space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70">
+                  Assigned Role
+                </label>
+                <div className="flex items-center gap-1 bg-[#16151B] p-0.5 rounded-lg border border-white/10 text-[10px] font-mono self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setNewMemberRoleMode('preset')}
+                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                      newMemberRoleMode === 'preset'
+                        ? 'bg-violet-600 text-white font-bold shadow'
+                        : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    Role Categories
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewMemberRoleMode('custom');
+                      if (!newMemberCustomRole) setNewMemberCustomRole(newMember.role);
+                    }}
+                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                      newMemberRoleMode === 'custom'
+                        ? 'bg-violet-600 text-white font-bold shadow'
+                        : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    <Edit3 className="w-2.5 h-2.5" />
+                    <span>Write Custom Role</span>
+                  </button>
+                </div>
+              </div>
+
+              {newMemberRoleMode === 'preset' ? (
+                <select
+                  value={newMember.role}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setNewMemberRoleMode('custom');
+                      setNewMemberCustomRole('');
+                    } else {
+                      setNewMember({ ...newMember, role: e.target.value });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-violet-400 cursor-pointer"
+                >
+                  {ROLE_PRESETS.map((preset) => (
+                    <option key={preset.value} value={preset.value} className="bg-[#0F0E11]">
+                      {preset.label} — {preset.desc}
+                    </option>
+                  ))}
+                  <option value="__custom__" className="bg-[#0F0E11] text-violet-400 font-bold">
+                    ✏️ + Write Custom Role (Custom Title...)
+                  </option>
+                </select>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={newMemberCustomRole}
+                      onChange={(e) => setNewMemberCustomRole(e.target.value)}
+                      placeholder="e.g. Lead Flutter Engineer, UI/UX Designer, QA Specialist..."
+                      className="w-full pl-3.5 pr-24 py-2.5 rounded-xl bg-[#16151B] border border-violet-500/50 text-xs font-semibold text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewMemberRoleMode('preset');
+                        setNewMember({ ...newMember, role: 'Developer' });
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-violet-400 hover:text-violet-300 underline cursor-pointer"
+                    >
+                      Use Category
+                    </button>
+                  </div>
+
+                  {/* Suggestion Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] font-mono text-white/40">Quick Ideas:</span>
+                    {ROLE_SUGGESTIONS.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setNewMemberCustomRole(suggestion)}
+                        className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#16151B] border border-white/10 hover:border-violet-400/50 text-white/70 hover:text-white transition-colors cursor-pointer"
+                      >
+                        + {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Permission Scope / Notes (Owner write on his way) */}
+            <div className="space-y-1">
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70">
+                Custom Permission Scope / Notes (Optional)
               </label>
-              <select
-                value={newMember.role}
-                onChange={(e) => setNewMember({ ...newMember, role: e.target.value as UserRole })}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-violet-400 cursor-pointer"
-              >
-                <option value="Developer" className="bg-[#0F0E11]">Developer (Engineering & Catalog Drafting)</option>
-                <option value="Editor" className="bg-[#0F0E11]">Editor (Release Notes & Copywriting)</option>
-                <option value="Content Manager" className="bg-[#0F0E11]">Content Manager (Media & Storefront Assets)</option>
-                <option value="Owner" className="bg-[#0F0E11]">Owner (Full Executive & Delete Authority)</option>
-              </select>
+              <input
+                type="text"
+                value={newMemberCustomScope}
+                onChange={(e) => setNewMemberCustomScope(e.target.value)}
+                placeholder="e.g. Authorized to draft & review shoecheck catalog; restricted to staging branch"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 transition-colors"
+              />
+              <p className="text-[10px] text-white/40 font-mono">
+                Owner note specifying custom responsibilities, project boundaries, or staging scopes.
+              </p>
             </div>
 
             <div>
@@ -534,13 +710,69 @@ export const AdminUsersPage: React.FC = () => {
               </select>
             </div>
 
+            {/* Collapsible Granular Permissions Setup */}
+            <div className="space-y-2 pt-1 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => setShowAddPermissions(!showAddPermissions)}
+                className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#16151B] border border-white/10 hover:border-violet-400/50 text-xs text-white/80 hover:text-white transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <Sliders className="w-3.5 h-3.5 text-violet-400" />
+                  <span className="font-bold">Initial Granular Permissions Policy</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] font-mono text-violet-400">
+                  <span>{showAddPermissions ? 'Hide Toggles' : 'Configure (Optional)'}</span>
+                  {showAddPermissions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </div>
+              </button>
+
+              {showAddPermissions && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-2xl bg-[#0F0E11] border border-white/10">
+                  {permissionItems.map((item) => {
+                    const isChecked = Boolean(newMemberPermissions[item.key]);
+                    return (
+                      <label 
+                        key={item.key}
+                        className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 ${
+                          isChecked 
+                            ? 'bg-[#16151B] border-violet-500/40 shadow-sm' 
+                            : 'bg-[#16151B]/40 border-white/5 opacity-60'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            setNewMemberPermissions(prev => ({
+                              ...prev,
+                              [item.key]: e.target.checked
+                            }));
+                          }}
+                          className="mt-0.5 w-3.5 h-3.5 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
+                        />
+                        <div className="min-w-0">
+                          <span className={`text-[11px] font-bold block ${isChecked ? 'text-white' : 'text-white/60'}`}>
+                            {item.label}
+                          </span>
+                          <p className="text-[9px] text-white/50 leading-tight">
+                            {item.desc}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="p-3.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs space-y-1">
               <span className="font-mono text-xs text-white font-bold flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
-                <span>Security Policy</span>
+                <span>Studio Security Policy</span>
               </span>
               <p className="text-[11px] text-white/70 leading-relaxed">
-                New members can draft and edit applications. The authority to delete catalog projects or remove members is permanently locked to the Studio Owner.
+                Members can draft, review, and collaborate according to their assigned permissions. The authority to delete catalog projects and remove members is permanently locked to the Studio Owner.
               </p>
             </div>
 
@@ -719,21 +951,125 @@ export const AdminUsersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Role Dropdown */}
-            <div>
-              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
-                Assigned Role
+            {/* Assigned Role: Categories vs Custom Role */}
+            <div className="space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70">
+                  Assigned Role
+                </label>
+                <div className="flex items-center gap-1 bg-[#16151B] p-0.5 rounded-lg border border-white/10 text-[10px] font-mono self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalRoleMode('preset');
+                      if (!ROLE_PRESETS.some(p => p.value === modalRole)) {
+                        setModalRole('Developer');
+                      }
+                    }}
+                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                      modalRoleMode === 'preset'
+                        ? 'bg-violet-600 text-white font-bold shadow'
+                        : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    Role Categories
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalRoleMode('custom');
+                      if (!modalCustomRole) setModalCustomRole(modalRole);
+                    }}
+                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                      modalRoleMode === 'custom'
+                        ? 'bg-violet-600 text-white font-bold shadow'
+                        : 'text-white/50 hover:text-white'
+                    }`}
+                  >
+                    <Edit3 className="w-2.5 h-2.5" />
+                    <span>Write Custom Role</span>
+                  </button>
+                </div>
+              </div>
+
+              {modalRoleMode === 'preset' ? (
+                <select
+                  value={modalRole}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setModalRoleMode('custom');
+                      setModalCustomRole('');
+                    } else {
+                      setModalRole(e.target.value);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-violet-400 cursor-pointer"
+                >
+                  {ROLE_PRESETS.map((preset) => (
+                    <option key={preset.value} value={preset.value} className="bg-[#0F0E11]">
+                      {preset.label} — {preset.desc}
+                    </option>
+                  ))}
+                  <option value="__custom__" className="bg-[#0F0E11] text-violet-400 font-bold">
+                    ✏️ + Write Custom Role (Custom Title...)
+                  </option>
+                </select>
+              ) : (
+                <div className="space-y-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={modalCustomRole}
+                      onChange={(e) => setModalCustomRole(e.target.value)}
+                      placeholder="e.g. Lead Flutter Engineer, UI/UX Designer, QA Specialist..."
+                      className="w-full pl-3.5 pr-24 py-2.5 rounded-xl bg-[#16151B] border border-violet-500/50 text-xs font-semibold text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalRoleMode('preset');
+                        setModalRole('Developer');
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-violet-400 hover:text-violet-300 underline cursor-pointer"
+                    >
+                      Use Category
+                    </button>
+                  </div>
+
+                  {/* Suggestion Chips */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] font-mono text-white/40">Quick Ideas:</span>
+                    {ROLE_SUGGESTIONS.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setModalCustomRole(suggestion)}
+                        className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#16151B] border border-white/10 hover:border-violet-400/50 text-white/70 hover:text-white transition-colors cursor-pointer"
+                      >
+                        + {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Permission Scope / Notes (Owner write on his way) */}
+            <div className="space-y-1">
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70">
+                Custom Permission Scope / Notes (Optional)
               </label>
-              <select
-                value={modalRole}
-                onChange={(e) => setModalRole(e.target.value as UserRole)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-violet-400 cursor-pointer"
-              >
-                <option value="Owner" className="bg-[#0F0E11]">Owner (Administrative Executive)</option>
-                <option value="Developer" className="bg-[#0F0E11]">Developer (Engineering & Code Access)</option>
-                <option value="Editor" className="bg-[#0F0E11]">Editor (Release Notes & Copy)</option>
-                <option value="Content Manager" className="bg-[#0F0E11]">Content Manager (Storefront Assets)</option>
-              </select>
+              <input
+                type="text"
+                value={modalCustomScope}
+                onChange={(e) => setModalCustomScope(e.target.value)}
+                placeholder="e.g. Authorized to draft & review shoecheck catalog; restricted to staging branch"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 transition-colors"
+              />
+              <p className="text-[10px] text-white/40 font-mono">
+                Owner note specifying custom responsibilities, project boundaries, or staging scopes.
+              </p>
             </div>
 
             {/* Permissions Checkbox Grid */}
@@ -747,7 +1083,7 @@ export const AdminUsersPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {permissionItems.map((item) => {
-                  const isChecked = modalPermissions[item.key];
+                  const isChecked = Boolean(modalPermissions[item.key]);
                   const isDeployToggle = item.key === 'deployProduction';
 
                   return (

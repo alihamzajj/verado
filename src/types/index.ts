@@ -43,7 +43,8 @@ export interface Project {
   submittedBy?: string;
 }
 
-export type UserRole = 'Owner' | 'Developer' | 'Editor' | 'Content Manager';
+export type PredefinedUserRole = 'Owner' | 'Developer' | 'Editor' | 'Content Manager';
+export type UserRole = PredefinedUserRole | (string & {});
 
 export interface Permissions {
   viewProjects: boolean;
@@ -56,6 +57,7 @@ export interface Permissions {
   mergeToProduction: boolean;
   deployProduction: boolean;
   manageTeam?: boolean;
+  customScope?: string;
 }
 
 export interface User {

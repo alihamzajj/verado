@@ -25,7 +25,7 @@ interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   loginAsUser: (userId: string) => void;
-  addUser: (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked' }) => void;
+  addUser: (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }) => void;
   deleteUser: (userId: string) => void;
   updateUserPermissions: (userId: string, permissions: Partial<Permissions>, role?: UserRole) => void;
   updateUserProfile: (userId: string, updates: { name?: string; email?: string; avatar?: string; role?: UserRole }) => void;
@@ -422,7 +422,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked' }) => {
+  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }) => {
     if (currentUser.role !== 'Owner') {
       addNotification('Access Denied: Only the Studio Owner can add team members.', 'error');
       return;
@@ -453,6 +453,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       codeEditor: userData.role === 'Developer' || isTargetOwner,
       mergeToProduction: isTargetOwner,
       deployProduction: isTargetOwner,
+      ...userData.permissions,
+      // Security policy: deleteProjects and manageTeam are strictly reserved for Owner
       deleteProjects: isTargetOwner,
       manageTeam: isTargetOwner,
     };
