@@ -40,20 +40,8 @@ const PublicLayout: React.FC = () => {
   );
 };
 
-// Layout wrapper for Admin Dashboard (Admin is always Admin)
+// Layout wrapper for Admin Dashboard
 const AdminLayout: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  React.useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const inviteToken = searchParams.get('invite');
-    if (inviteToken) {
-      // Employees clicking invite links are directed ONLY to the Project Add portal
-      navigate(`/submit-project?invite=${inviteToken}`, { replace: true });
-    }
-  }, [location.search, navigate]);
-
   return (
     <div className="min-h-screen flex bg-[#0F0E11] text-slate-100">
       <AdminSidebar />
@@ -73,12 +61,12 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const searchParams = new URLSearchParams(location.search);
   const inviteId = searchParams.get('invite');
 
-  // If entering via direct email invite link, redirect to project add portal
-  if (inviteId) {
-    return <Navigate to={`/submit-project?invite=${inviteId}`} replace />;
+  // If entering via direct email invite link and not authenticated, route to activation login
+  const isAuth = localStorage.getItem('verado_admin_auth') === 'true';
+  if (inviteId && !isAuth) {
+    return <Navigate to={`/admin/login?invite=${inviteId}`} replace />;
   }
 
-  const isAuth = localStorage.getItem('verado_admin_auth') === 'true';
   if (!isAuth) {
     return <Navigate to="/admin/login" replace />;
   }

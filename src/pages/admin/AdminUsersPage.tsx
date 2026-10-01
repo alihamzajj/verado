@@ -101,11 +101,11 @@ export const AdminUsersPage: React.FC = () => {
     viewProjects: true,
     addProjects: true,
     editProjects: true,
-    createBranch: true,
-    previewChanges: true,
-    codeEditor: true,
-    mergeToProduction: false,
+    uploadMedia: true,
+    publishProjects: false,
     deployProduction: false,
+    deleteProjects: false,
+    manageTeam: false,
   });
 
   const [selectedGradient, setSelectedGradient] = useState<string>('amethyst');
@@ -127,11 +127,11 @@ export const AdminUsersPage: React.FC = () => {
     viewProjects: true,
     addProjects: true,
     editProjects: true,
-    createBranch: true,
-    previewChanges: true,
-    codeEditor: true,
-    mergeToProduction: false,
+    uploadMedia: true,
+    publishProjects: false,
     deployProduction: false,
+    deleteProjects: false,
+    manageTeam: false,
   });
 
   const handleOpenPermissions = (user: User) => {
@@ -252,23 +252,45 @@ export const AdminUsersPage: React.FC = () => {
   };
 
   type PermissionItemKey = 
-    | 'viewProjects' 
     | 'addProjects' 
     | 'editProjects' 
     | 'uploadMedia' 
-    | 'deployProduction' 
+    | 'publishProjects' 
     | 'manageTeam' 
     | 'deleteProjects';
 
   const permissionItems: { key: PermissionItemKey; label: string; desc: string; ownerOnly?: boolean }[] = [
-    { key: 'viewProjects', label: 'View Projects', desc: 'Allows viewing of public and private app catalog specs' },
-    { key: 'addProjects', label: 'Create Projects', desc: 'Can register and create new applications in catalog' },
-    { key: 'editProjects', label: 'Edit Projects', desc: 'Can modify project metadata, descriptions, categories, and URLs' },
-    { key: 'uploadMedia', label: 'Upload Media', desc: 'Can upload and replace app logos, covers, screenshots, and demo videos' },
-    { key: 'deployProduction', label: 'Publish to Production', desc: 'Can publish projects live to showcase without owner review' },
-    { key: 'manageTeam', label: 'Manage Team Members', desc: 'Invite, approve, assign roles, and remove employees', ownerOnly: true },
-    { key: 'deleteProjects', label: 'Delete Projects', desc: 'Permanently purge applications from platform database', ownerOnly: true },
+    { key: 'addProjects', label: 'Create Projects', desc: 'Can add and register new applications in the catalog' },
+    { key: 'editProjects', label: 'Edit Projects', desc: 'Can update project names, descriptions, images, logos, technologies, and application links' },
+    { key: 'uploadMedia', label: 'Upload Images', desc: 'Can upload and replace application logos, covers, screenshots, and visual media' },
+    { key: 'publishProjects', label: 'Publish Projects', desc: 'Can publish projects directly to live showcase without owner review' },
+    { key: 'deleteProjects', label: 'Delete Projects', desc: 'Permanently purge applications from database (Strictly Owner Only)', ownerOnly: true },
+    { key: 'manageTeam', label: 'Manage Team Members', desc: 'Invite developers, grant/revoke permissions, and remove team members (Strictly Owner Only)', ownerOnly: true },
   ];
+
+  if (!isOwner) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto space-y-6">
+        <div className="p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Access Restricted to Studio Owner</h2>
+          <p className="text-xs sm:text-sm text-white/60 max-w-md mx-auto leading-relaxed">
+            Only the Studio Owner has permission to invite developers, configure permissions, or manage team members.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => navigate('/admin/projects')}
+              className="px-6 py-2.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer shadow-lg shadow-violet-600/30"
+            >
+              Go to Projects
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
@@ -1170,7 +1192,7 @@ export const AdminUsersPage: React.FC = () => {
                   const effectiveRole = modalRoleMode === 'custom' ? modalCustomRole.trim() : modalRole;
                   const isLockedToOwner = Boolean(item.ownerOnly && !isAdministrativeRole(effectiveRole));
                   const isChecked = isLockedToOwner ? false : Boolean(modalPermissions[item.key]);
-                  const isDeployToggle = item.key === 'deployProduction';
+                  const isDeployToggle = item.key === 'publishProjects';
 
                   return (
                     <label 

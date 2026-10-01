@@ -110,14 +110,14 @@ export const buildInvitationEmailHtml = (params: {
                 <tr>
                   <td align="center">
                     <a href="${inviteUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #7C3AED, #6366F1); color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 800; font-family: monospace; text-transform: uppercase; letter-spacing: 1px; padding: 16px 36px; border-radius: 9999px; box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.5);">
-                      Add Your Project to Verado →
+                      Accept Invitation & Sign In →
                     </a>
                   </td>
                 </tr>
               </table>
 
               <p style="font-size: 12px; line-height: 18px; color: rgba(255, 255, 255, 0.45); margin: 0 0 12px 0; text-align: center;">
-                Clicking the link will securely authenticate your contributor access and land you directly on the Project Add screen to submit your applications.
+                Clicking the link will securely activate your developer access and sign you into the Verado Control Hub according to the permissions assigned by the Owner.
               </p>
 
               <!-- Magic Link Fallback -->
@@ -162,7 +162,7 @@ export const sendEmployeeInvitationEmail = async (
   studioName = 'Verado Studios'
 ): Promise<EmailSendResult> => {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
-  const inviteUrl = `${origin}/submit-project?invite=${invitation.token}&email=${encodeURIComponent(invitation.email)}`;
+  const inviteUrl = `${origin}/admin/login?invite=${invitation.token}&email=${encodeURIComponent(invitation.email)}`;
 
   const emailHtml = buildInvitationEmailHtml({
     name: invitation.name,

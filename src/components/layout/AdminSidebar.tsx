@@ -35,14 +35,14 @@ export const AdminSidebar: React.FC = () => {
       path: '/admin/users',
       icon: Users,
       exact: false,
-      allowed: true,
+      allowed: currentUser.role === 'Owner',
     },
     {
       name: 'Messages',
       path: '/admin/messages',
       icon: MessageSquare,
       exact: false,
-      allowed: true,
+      allowed: currentUser.role === 'Owner',
       badge: unreadInquiriesCount > 0 ? unreadInquiriesCount : undefined,
     },
     {
@@ -50,7 +50,7 @@ export const AdminSidebar: React.FC = () => {
       path: '/admin/settings',
       icon: Settings,
       exact: false,
-      allowed: true,
+      allowed: currentUser.role === 'Owner',
     },
   ];
 

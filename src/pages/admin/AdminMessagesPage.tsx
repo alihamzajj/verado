@@ -11,7 +11,8 @@ import {
   User, 
   ChevronRight,
   Send,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { ContactInquiry } from '../../types';
@@ -20,6 +21,7 @@ import { getInitialsAvatar } from '../../lib/avatar';
 
 export const AdminMessagesPage: React.FC = () => {
   const { 
+    currentUser,
     inquiries, 
     unreadInquiriesCount, 
     markInquiryAsRead, 
@@ -50,6 +52,22 @@ export const AdminMessagesPage: React.FC = () => {
       item.message.toLowerCase().includes(query)
     );
   });
+
+  if (currentUser.role !== 'Owner') {
+    return (
+      <div className="p-8 max-w-3xl mx-auto space-y-6">
+        <div className="p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mx-auto text-amber-400">
+            <Lock className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-white">Access Restricted to Studio Owner</h2>
+          <p className="text-xs sm:text-sm text-white/60 max-w-md mx-auto leading-relaxed">
+            Customer inquiries and client correspondence are private to the Studio Owner.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">

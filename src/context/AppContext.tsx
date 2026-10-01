@@ -155,8 +155,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
-  // Current logged in user is ALWAYS the Studio Owner (No demotions, no switching away from Admin)
-  const [currentUserId, setCurrentUserId] = useState<string>('u-1');
+  // Current logged in user is either Owner or an authorized Developer
+  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('apex_current_user_id') || 'u-1';
+    } catch {
+      return 'u-1';
+    }
+  });
 
   // Activities state
   const [activities, setActivities] = useState<ActivityItem[]>(() => {
@@ -338,8 +344,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUserId]);
 
-  // In Admin dashboard, the active user is ALWAYS the Studio Owner (Admin is always Admin)
-  const currentUser = users.find(u => u.role === 'Owner') || users.find(u => isAdministrativeUser(u)) || users[0];
+  // Resolve current active dashboard user (Owner or authenticated Developer)
+  const currentUser = users.find(u => u.id === currentUserId) || users.find(u => u.role === 'Owner') || users[0];
 
   const addNotification = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);

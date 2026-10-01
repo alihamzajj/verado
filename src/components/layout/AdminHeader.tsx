@@ -67,7 +67,11 @@ export const AdminHeader: React.FC = () => {
             </div>
             <div className="text-left hidden sm:block">
               <span className="font-semibold block text-white text-xs">{currentUser.name}</span>
-              <span className="font-mono text-[9px] uppercase tracking-wider text-amber-400 font-bold">👑 Studio Owner</span>
+              <span className={`font-mono text-[9px] uppercase tracking-wider font-bold ${
+                currentUser.role === 'Owner' ? 'text-amber-400' : 'text-violet-400'
+              }`}>
+                {currentUser.role === 'Owner' ? '👑 Studio Owner' : `💻 ${currentUser.role}`}
+              </span>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-white/50" />
           </button>
@@ -77,23 +81,25 @@ export const AdminHeader: React.FC = () => {
               <div className="px-3 py-2.5 border-b border-white/10">
                 <div className="font-bold text-white text-xs">{currentUser.name}</div>
                 <div className="text-[11px] font-mono text-white/50">{currentUser.email}</div>
-                <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-400/10 text-amber-300 border border-amber-400/20">
-                  <span>👑 Studio Owner & Administrator</span>
+                <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                  <span>{currentUser.role === 'Owner' ? '👑 Studio Owner & Administrator' : `💻 ${currentUser.role}`}</span>
                 </div>
               </div>
 
-              <div className="py-1 space-y-1">
-                <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    navigate('/admin/settings');
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs text-white/80 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
-                  <span>Studio Profile & Settings</span>
-                </button>
-              </div>
+              {currentUser.role === 'Owner' && (
+                <div className="py-1 space-y-1">
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/admin/settings');
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-xs text-white/80 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
+                    <span>Studio Profile & Settings</span>
+                  </button>
+                </div>
+              )}
 
               <div className="pt-2 border-t border-white/10 mt-1">
                 <button
