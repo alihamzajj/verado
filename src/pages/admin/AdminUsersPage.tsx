@@ -213,6 +213,14 @@ export const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleAllowAndNotify = (user: User) => {
+    if (user.status !== 'Active') {
+      toggleUserStatus(user.id);
+    }
+    setInviteModalUser(user);
+    addNotification(`Authorization invitation dispatched to ${user.email}!`, 'success');
+  };
+
   type BooleanPermissionKey = 'viewProjects' | 'addProjects' | 'editProjects' | 'codeEditor' | 'createBranch' | 'previewChanges' | 'mergeToProduction' | 'deployProduction';
 
   const permissionItems: { key: BooleanPermissionKey; label: string; desc: string }[] = [
@@ -284,6 +292,43 @@ export const AdminUsersPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Return to Owner Session Banner if currently impersonating an employee */}
+      {!isOwner && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+              <ShieldAlert className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs uppercase font-bold text-amber-300 tracking-wider">
+                  Employee Persona Active
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-amber-400/20 text-amber-300">
+                  {currentUser.role}
+                </span>
+              </div>
+              <p className="text-xs text-amber-100/90 mt-0.5">
+                You are currently viewing as employee <strong className="text-white">{currentUser.name}</strong>. Owner management actions are restricted.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const ownerUser = users.find(u => u.role === 'Owner') || users[0];
+              if (ownerUser) {
+                setCurrentUser(ownerUser);
+                addNotification(`Returned to Studio Owner session (${ownerUser.name})`, 'success');
+              }
+            }}
+            className="px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-black font-mono text-xs uppercase font-bold tracking-wider transition-all shrink-0 shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-2 self-start sm:self-auto"
+          >
+            <span>👑 Return to Studio Owner View</span>
+          </button>
+        </div>
+      )}
 
       {/* Studio Security Policy Banner */}
       <div className="p-4 rounded-2xl bg-[#0F0E11] border border-violet-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -386,15 +431,15 @@ export const AdminUsersPage: React.FC = () => {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => isOwner && toggleUserStatus(user.id)}
+                          onClick={() => handleAllowAndNotify(user)}
                           disabled={!isOwner}
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
-                            isOwner ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
+                            isOwner ? 'cursor-pointer hover:bg-emerald-500/25 hover:text-emerald-300 hover:border-emerald-500/40 active:scale-95' : 'cursor-default'
                           } bg-amber-500/15 text-amber-300 border border-amber-500/30`}
-                          title={isOwner ? 'Suspended. Click to Allow and activate green Active status.' : 'Suspended'}
+                          title={isOwner ? 'Suspended. Click to Allow and dispatch email notification.' : 'Suspended'}
                         >
                           <span className="w-2 h-2 rounded-full bg-amber-400" />
-                          <span>Suspended</span>
+                          <span>Allow Access</span>
                         </button>
                       )}
                     </td>
@@ -425,50 +470,52 @@ export const AdminUsersPage: React.FC = () => {
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2 font-mono">
                         
-                        {/* Permissions & Profile configuration */}
-                        <button
-                          onClick={() => handleOpenPermissions(user)}
-                          disabled={!isOwner}
-                          className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-colors uppercase tracking-wider ${
-                            isOwner
-                              ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
-                              : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
-                          }`}
-                          title={isOwner ? 'Edit Profile & Permissions' : 'Only Studio Owner can configure permissions'}
-                        >
-                          <Sliders className="w-3 h-3 text-violet-400" />
-                          <span>Edit & Access</span>
-                        </button>
-
-                        {/* Intuitive Session / Login Button */}
                         {isCurrent ? (
                           <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
                             <Check className="w-3 h-3 text-emerald-400" />
                             <span>You (Active)</span>
                           </span>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              loginAsUser(user.id);
-                              navigate('/admin');
-                            }}
-                            className="px-3.5 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-[11px] uppercase tracking-wider font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
-                            title={`Log in and enter dashboard as ${user.name}`}
-                          >
-                            <UserCheck className="w-3.5 h-3.5 text-violet-400" />
-                            <span>Log in as Member</span>
-                          </button>
+                          <>
+                            {/* 1-Click Allow & Email Notification */}
+                            <button
+                              type="button"
+                              onClick={() => handleAllowAndNotify(user)}
+                              className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                              title={`Allow ${user.name} and send email notification to ${user.email}`}
+                            >
+                              <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Allow & Send Email</span>
+                            </button>
+
+                            {/* Intuitive Session / Login Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                loginAsUser(user.id);
+                                navigate('/admin');
+                              }}
+                              className="px-3 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-[11px] uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                              title={`Log in and enter dashboard as ${user.name}`}
+                            >
+                              <UserCheck className="w-3.5 h-3.5 text-violet-400" />
+                              <span>Log in</span>
+                            </button>
+                          </>
                         )}
 
-                        {/* Email Invite Notification Button */}
+                        {/* Permissions & Profile configuration */}
                         <button
-                          type="button"
-                          onClick={() => setInviteModalUser(user)}
-                          className="p-2 rounded-full bg-[#16151B] hover:bg-black text-white/70 hover:text-violet-300 border border-white/10 hover:border-violet-400/50 transition-colors cursor-pointer"
-                          title={`View email invitation and dashboard access link for ${user.name}`}
+                          onClick={() => handleOpenPermissions(user)}
+                          disabled={!isOwner}
+                          className={`p-2 rounded-full border text-xs font-semibold flex items-center transition-colors uppercase tracking-wider ${
+                            isOwner
+                              ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
+                              : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
+                          }`}
+                          title={isOwner ? `Edit Profile & Permissions for ${user.name}` : 'Only Studio Owner can configure permissions'}
                         >
-                          <Mail className="w-3.5 h-3.5 text-violet-400" />
+                          <Sliders className="w-3.5 h-3.5 text-violet-400" />
                         </button>
 
                         {/* Remove Team Member button (Owner Only, Cannot delete self) */}

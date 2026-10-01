@@ -35,11 +35,20 @@ export const AdminDashboardPage: React.FC = () => {
     currentUser, 
     deleteUser, 
     toggleUserStatus, 
-    loginAsUser 
+    loginAsUser,
+    addNotification 
   } = useApp();
   const isOwner = currentUser.role === 'Owner';
   const [employeeToDelete, setEmployeeToDelete] = useState<User | null>(null);
   const [dashboardInviteUser, setDashboardInviteUser] = useState<User | null>(null);
+
+  const handleAllowAndNotify = (user: User) => {
+    if (user.status !== 'Active') {
+      toggleUserStatus(user.id);
+    }
+    setDashboardInviteUser(user);
+    addNotification(`Authorization notification dispatched to ${user.email}!`, 'success');
+  };
 
   const totalActive = projects.filter(p => !p.isArchived).length;
   const publishedProjects = projects.filter(p => p.published && !p.isArchived).length;
@@ -411,7 +420,7 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto font-mono">
-                  {/* Green Active Button */}
+                  {/* Status Indicator */}
                   {member.status === 'Active' ? (
                     <button
                       type="button"
@@ -428,52 +437,56 @@ export const AdminDashboardPage: React.FC = () => {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => isOwner && toggleUserStatus(member.id)}
+                      onClick={() => handleAllowAndNotify(member)}
                       disabled={!isOwner}
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
-                        isOwner ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
+                        isOwner ? 'cursor-pointer hover:bg-emerald-500/25 hover:text-emerald-300 hover:border-emerald-500/40 active:scale-95' : 'cursor-default'
                       } bg-amber-500/15 text-amber-300 border border-amber-500/30`}
-                      title={isOwner ? 'Suspended. Click to Allow and activate green Active status.' : 'Suspended'}
+                      title={isOwner ? 'Suspended. Click to Allow and dispatch email notification.' : 'Suspended'}
                     >
                       <span className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span>Suspended</span>
+                      <span>Allow Access</span>
                     </button>
                   )}
 
-                  {/* Log in as Member button */}
+                  {/* Actions for Current vs Non-Current */}
                   {isCurrent ? (
-                    <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3 text-emerald-400" />
+                    <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                       <span>You (Active)</span>
                     </span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => loginAsUser(member.id)}
-                      className="px-3.5 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 text-[11px] font-mono uppercase font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-                      title={`Log in to dashboard as ${member.name}`}
-                    >
-                      <UserCheck className="w-3.5 h-3.5 text-violet-400" />
-                      <span>Log in as Member</span>
-                    </button>
-                  )}
+                    <>
+                      {/* 1-Click Allow & Email Notification Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleAllowAndNotify(member)}
+                        className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                        title={`Allow ${member.name} and send email notification to ${member.email}`}
+                      >
+                        <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Allow & Send Email</span>
+                      </button>
 
-                  {/* Email Invite Button */}
-                  <button
-                    type="button"
-                    onClick={() => setDashboardInviteUser(member)}
-                    className="p-1.5 rounded-full bg-[#16151B] hover:bg-black text-white/70 hover:text-violet-300 border border-white/10 hover:border-violet-400/50 transition-colors cursor-pointer"
-                    title={`View email invitation & dashboard access link for ${member.name}`}
-                  >
-                    <Mail className="w-3.5 h-3.5 text-violet-400" />
-                  </button>
+                      {/* Log in as Member button */}
+                      <button
+                        type="button"
+                        onClick={() => loginAsUser(member.id)}
+                        className="px-3 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 text-[11px] font-mono uppercase font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                        title={`Log in to dashboard as ${member.name}`}
+                      >
+                        <UserCheck className="w-3.5 h-3.5 text-violet-400" />
+                        <span>Log in</span>
+                      </button>
+                    </>
+                  )}
 
                   {/* Owner Remove Employee Button directly from Dashboard */}
                   {isOwner && !isCurrent && (
                     <button
                       type="button"
                       onClick={() => setEmployeeToDelete(member)}
-                      className="p-1.5 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                      className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
                       title={`Remove employee "${member.name}" directly from dashboard`}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
