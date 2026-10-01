@@ -205,6 +205,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteProject = (id: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner has authority to delete projects.', 'error');
+      return;
+    }
     const target = projects.find(p => p.id === id);
     setProjects(prev => prev.filter(p => p.id !== id));
     deleteProjectFromSupabase(id);
@@ -216,7 +220,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         target: target.category,
         type: 'project',
       });
-      addNotification(`Project "${target.name}" was removed.`, 'info');
+      addNotification(`Project "${target.name}" was removed by Owner.`, 'info');
     }
   };
 
@@ -260,13 +264,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUserPermissions = (userId: string, permissions: Partial<Permissions>, newRole?: UserRole) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can configure team permissions.', 'error');
+      return;
+    }
+
+    const effectiveRole = newRole || users.find(u => u.id === userId)?.role || 'Developer';
+    const isTargetOwner = effectiveRole === 'Owner';
+
     setUsers(prev => prev.map(u => {
       if (u.id === userId) {
-        const updatedPermissions: Permissions = { ...u.permissions, ...permissions };
+        const updatedPermissions: Permissions = { 
+          ...u.permissions, 
+          ...permissions,
+          // Only Owner can ever have deleteProjects and manageTeam permissions
+          deleteProjects: isTargetOwner,
+          manageTeam: isTargetOwner,
+        };
         
         const updatedUser: User = {
           ...u,
-          role: newRole || u.role,
+          role: effectiveRole,
           permissions: updatedPermissions,
         };
         return updatedUser;
@@ -279,7 +297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       user: currentUser.name,
       avatar: currentUser.avatar,
       action: `Modified permissions for ${targetUser?.name || 'team member'}`,
-      target: newRole || targetUser?.role || 'User',
+      target: effectiveRole,
       type: 'user',
     });
     addNotification(`Permissions updated for ${targetUser?.name}`, 'success');

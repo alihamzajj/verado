@@ -12,8 +12,6 @@ export const AdminSettingsPage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState(() => localStorage.getItem('verado_admin_password') || 'verado2026!');
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKey, setApiKey] = useState('verado_sec_9948201a884fbc901e82');
   const [isSaving, setIsSaving] = useState(false);
 
   // Load latest settings from Supabase if connected
@@ -30,7 +28,6 @@ export const AdminSettingsPage: React.FC = () => {
           setCurrentPassword(remote.ownerPassword);
           localStorage.setItem('verado_admin_password', remote.ownerPassword);
         }
-        if (remote.apiKey) setApiKey(remote.apiKey);
       }
     });
   }, []);
@@ -53,17 +50,10 @@ export const AdminSettingsPage: React.FC = () => {
       supportEmail,
       ownerEmail: ownerEmail.trim(),
       ownerPassword: updatedPass,
-      apiKey,
     });
 
     setIsSaving(false);
     addNotification('Client credentials and studio settings saved! You can sign in with this email and password on any device.', 'success');
-  };
-
-  const handleRollKey = () => {
-    const newKey = 'verado_sec_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 8);
-    setApiKey(newKey);
-    addNotification('API Secret key rolled.', 'info');
   };
 
   return (
@@ -187,47 +177,7 @@ export const AdminSettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* API Keys */}
-        <div className="p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-violet-400">&#125;</span>
-              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-violet-400">
-                Developer API Secret Key
-              </h3>
-            </div>
-            <button
-              type="button"
-              onClick={handleRollKey}
-              className="font-mono text-xs uppercase tracking-wider text-violet-400 hover:text-violet-300 flex items-center gap-1.5 font-semibold cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Rotate Secret Key</span>
-            </button>
-          </div>
 
-          <p className="text-xs text-white/60">
-            Used for automated CI/CD pipeline triggers and binary deployment.
-          </p>
-
-          <div className="flex items-center gap-2">
-            <div className="flex-1 relative">
-              <input
-                type={showApiKey ? 'text' : 'password'}
-                readOnly
-                value={apiKey}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-mono text-white/80 select-all"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowApiKey(!showApiKey)}
-              className="p-3 rounded-xl bg-[#16151B] border border-white/10 text-white/60 hover:text-white cursor-pointer"
-            >
-              {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
 
         <div className="flex justify-end pt-2">
           <button

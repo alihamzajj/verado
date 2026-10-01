@@ -24,7 +24,7 @@ export const AdminHeader: React.FC = () => {
     if (location.pathname.includes('/edit')) return 'Edit Application Details';
     if (location.pathname.startsWith('/admin/projects')) return 'Project Portfolio Manager';
     if (location.pathname.startsWith('/admin/users')) return 'Developer Permissions & Roles';
-    if (location.pathname.startsWith('/admin/settings')) return 'Studio Settings & API Keys';
+    if (location.pathname.startsWith('/admin/settings')) return 'Studio Settings & Credentials';
     return 'Admin Console';
   };
 

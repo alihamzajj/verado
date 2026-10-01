@@ -8,7 +8,7 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { users, setCurrentUser, addNotification } = useApp();
   
-  const [email, setEmail] = useState(() => localStorage.getItem('verado_admin_email') || 'owner@verado.io');
+  const [email, setEmail] = useState(() => localStorage.getItem('verado_admin_email') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,11 +22,11 @@ export const AdminLoginPage: React.FC = () => {
     try {
       // Check cloud settings first
       const remote = await fetchStudioSettings();
-      const validPassword = remote?.ownerPassword || localStorage.getItem('verado_admin_password') || 'verado2026!';
       const validEmail = remote?.ownerEmail || localStorage.getItem('verado_admin_email') || 'owner@verado.io';
+      const validPassword = remote?.ownerPassword || localStorage.getItem('verado_admin_password') || 'verado2026!';
 
-      const emailMatches = email.trim().toLowerCase() === validEmail.trim().toLowerCase() || email.trim().toLowerCase() === 'owner@verado.io';
-      const passwordMatches = password === validPassword || password === 'admin123' || password === 'verado2026!';
+      const emailMatches = email.trim().toLowerCase() === validEmail.trim().toLowerCase();
+      const passwordMatches = password === validPassword;
 
       if (emailMatches && passwordMatches) {
         localStorage.setItem('verado_admin_auth', 'true');
@@ -39,8 +39,9 @@ export const AdminLoginPage: React.FC = () => {
         addNotification('Invalid credentials. Access restricted.', 'error');
       }
     } catch {
+      const validEmail = localStorage.getItem('verado_admin_email') || 'owner@verado.io';
       const savedPassword = localStorage.getItem('verado_admin_password') || 'verado2026!';
-      if (password === savedPassword || password === 'admin123') {
+      if (email.trim().toLowerCase() === validEmail.trim().toLowerCase() && password === savedPassword) {
         localStorage.setItem('verado_admin_auth', 'true');
         setCurrentUser(users[0]);
         navigate('/admin');
@@ -108,17 +109,14 @@ export const AdminLoginPage: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl bg-[#16151B] border border-white/10 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 transition-colors"
-              placeholder="owner@verado.io"
+              placeholder="Enter owner email..."
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block font-mono text-xs uppercase tracking-wider text-white/70">
-                Owner Password
-              </label>
-              <span className="font-mono text-[10px] text-white/40">Default: verado2026!</span>
-            </div>
+            <label className="block font-mono text-xs uppercase tracking-wider text-white/70 mb-2">
+              Owner Password
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}

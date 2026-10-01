@@ -76,7 +76,7 @@ export const ProjectDetailPage: React.FC = () => {
 
   const handleOpenDownload = (platform: 'ios' | 'android') => {
     setDownloadModal(platform);
-    addNotification(`Redirecting to ${platform === 'ios' ? 'Apple App Store' : 'Google Play Store'}... (Mock Prototype)`, 'info');
+    addNotification(`Opening ${platform === 'ios' ? 'Apple App Store' : 'Google Play Store'}...`, 'info');
   };
 
   return (
@@ -330,7 +330,7 @@ export const ProjectDetailPage: React.FC = () => {
               </div>
 
               <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-violet-300 bg-violet-500/10 px-2 py-0.5 rounded-full border border-violet-500/20">
-                PROTOTYPE DEMO
+                FEATURE SHOWCASE
               </span>
             </div>
           </div>

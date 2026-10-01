@@ -15,13 +15,15 @@ import {
   Layers,
   Sparkles,
   LayoutGrid,
-  Table as TableIcon
+  Table as TableIcon,
+  Lock
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../../components/common/Modal';
 
 export const AdminProjectsPage: React.FC = () => {
-  const { projects, deleteProject, toggleProjectPublish, toggleProjectFeatured } = useApp();
+  const { projects, deleteProject, toggleProjectPublish, toggleProjectFeatured, currentUser, addNotification } = useApp();
+  const isOwner = currentUser.role === 'Owner';
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
@@ -35,6 +37,11 @@ export const AdminProjectsPage: React.FC = () => {
   );
 
   const handleDeleteConfirm = () => {
+    if (!isOwner) {
+      addNotification('Access Denied: Only the Studio Owner can delete projects.', 'error');
+      setProjectToDelete(null);
+      return;
+    }
     if (projectToDelete) {
       deleteProject(projectToDelete);
       setProjectToDelete(null);
@@ -218,13 +225,23 @@ export const AdminProjectsPage: React.FC = () => {
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </Link>
-                        <button
-                          onClick={() => setProjectToDelete(project.id)}
-                          className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/70 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
-                          title="Delete Project"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {isOwner ? (
+                          <button
+                            onClick={() => setProjectToDelete(project.id)}
+                            className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/70 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                            title="Delete Project (Owner Only)"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="p-2 rounded-full bg-[#16151B]/40 text-white/20 border border-white/5 cursor-not-allowed"
+                            title="Delete permission restricted to Studio Owner"
+                          >
+                            <Lock className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
 
@@ -276,12 +293,23 @@ export const AdminProjectsPage: React.FC = () => {
                   >
                     Edit
                   </Link>
-                  <button
-                    onClick={() => setProjectToDelete(project.id)}
-                    className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {isOwner ? (
+                    <button
+                      onClick={() => setProjectToDelete(project.id)}
+                      className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 cursor-pointer"
+                      title="Delete Project (Owner Only)"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="p-2 rounded-full bg-[#16151B]/40 text-white/20 border border-white/5 cursor-not-allowed"
+                      title="Delete permission restricted to Studio Owner"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

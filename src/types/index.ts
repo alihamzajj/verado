@@ -46,11 +46,13 @@ export interface Permissions {
   viewProjects: boolean;
   addProjects: boolean;
   editProjects: boolean;
+  deleteProjects?: boolean;
   codeEditor?: boolean;
   createBranch: boolean;
   previewChanges: boolean;
   mergeToProduction: boolean;
   deployProduction: boolean;
+  manageTeam?: boolean;
 }
 
 export interface User {

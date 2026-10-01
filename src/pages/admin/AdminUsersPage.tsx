@@ -18,6 +18,7 @@ import { Modal } from '../../components/common/Modal';
 
 export const AdminUsersPage: React.FC = () => {
   const { users, currentUser, setCurrentUser, updateUserPermissions, addNotification } = useApp();
+  const isOwner = currentUser.role === 'Owner';
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   
   // Modal local state
@@ -33,12 +34,20 @@ export const AdminUsersPage: React.FC = () => {
   });
 
   const handleOpenPermissions = (user: User) => {
+    if (!isOwner) {
+      addNotification('Access Denied: Only the Studio Owner has authority to configure team permissions.', 'error');
+      return;
+    }
     setSelectedUser(user);
     setModalRole(user.role);
     setModalPermissions({ ...user.permissions });
   };
 
   const handleSavePermissions = () => {
+    if (!isOwner) {
+      addNotification('Access Denied: Only the Studio Owner can update permissions.', 'error');
+      return;
+    }
     if (selectedUser) {
       updateUserPermissions(selectedUser.id, modalPermissions, modalRole);
       setSelectedUser(null);
@@ -84,15 +93,17 @@ export const AdminUsersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Instructional Callout */}
-      <div className="p-5 rounded-[24px] bg-[#0F0E11] border border-violet-500/20 text-xs text-violet-200 flex items-start gap-3">
-        <Info className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <span className="font-mono text-xs uppercase tracking-wider text-violet-300 font-bold">Prototype Testing Guide:</span>
-          <p className="text-[11px] leading-relaxed text-white/70">
-            Click <strong>"Configure Permissions"</strong> for any developer or content manager below. Try toggling <strong>Edit Projects</strong> or <strong>Deploy Production</strong> ON/OFF. Then click <strong>"Simulate as User"</strong> to experience that persona's exact dashboard view!
-          </p>
+      {/* Studio Security Policy Banner */}
+      <div className="p-4 rounded-2xl bg-[#0F0E11] border border-violet-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <ShieldCheck className="w-4 h-4 text-violet-400 shrink-0" />
+          <span className="text-white/80">
+            <strong className="text-white">Studio Policy:</strong> Owner holds exclusive delete authority. Team members can view, add, or edit projects based on assigned roles, but cannot delete catalog data.
+          </span>
         </div>
+        <span className="font-mono text-[10px] text-violet-300 bg-violet-500/10 px-2.5 py-1 rounded-full border border-violet-500/20 whitespace-nowrap">
+          Delete: Owner Only
+        </span>
       </div>
 
       {/* Users Table */}
@@ -186,7 +197,13 @@ export const AdminUsersPage: React.FC = () => {
                       <div className="flex items-center justify-end gap-2 font-mono">
                         <button
                           onClick={() => handleOpenPermissions(user)}
-                          className="px-3.5 py-1.5 rounded-full bg-[#16151B] hover:bg-black text-white/80 hover:text-white border border-white/10 hover:border-violet-400/50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer uppercase tracking-wider"
+                          disabled={!isOwner}
+                          className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-colors uppercase tracking-wider ${
+                            isOwner
+                              ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
+                              : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
+                          }`}
+                          title={isOwner ? 'Configure Permissions' : 'Only Studio Owner can configure permissions'}
                         >
                           <Sliders className="w-3 h-3 text-violet-400" />
                           <span>Permissions</span>
@@ -201,7 +218,7 @@ export const AdminUsersPage: React.FC = () => {
                               : 'bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-bold'
                           }`}
                         >
-                          {isCurrent ? 'Active Persona' : 'Simulate User'}
+                          {isCurrent ? 'Active Account' : 'Switch User'}
                         </button>
                       </div>
                     </td>
@@ -294,6 +311,24 @@ export const AdminUsersPage: React.FC = () => {
                     </label>
                   );
                 })}
+              </div>
+
+              {/* Permanent Owner-Only Delete Guard Notice */}
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3 mt-4">
+                <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold uppercase tracking-wider text-amber-300">
+                      Delete Authority: Owner Only
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-amber-400/20 text-amber-300">
+                      Enforced
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-200/80 leading-relaxed">
+                    Team members can be granted rights to view, add, and edit applications, but the authority to permanently delete catalog projects or remove data is strictly locked to the Studio Owner.
+                  </p>
+                </div>
               </div>
             </div>
 
