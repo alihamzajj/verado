@@ -23,8 +23,12 @@ export const AdminProjectEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const isEditing = Boolean(id);
   const navigate = useNavigate();
-  const { projects, addProject, updateProject, addNotification, isSupabaseLive, currentUser } = useApp();
-  const isOwner = currentUser.role === 'Owner';
+  const { projects, addProject, updateProject, addNotification, isSupabaseLive, currentUser, isAdministrativeUser } = useApp();
+  const isOwner = isAdministrativeUser(currentUser);
+  const canAdd = isOwner || currentUser.permissions.addProjects !== false;
+  const canEdit = isOwner || currentUser.permissions.editProjects !== false;
+  const canUpload = isOwner || currentUser.permissions.uploadMedia !== false;
+  const canPublish = isOwner || Boolean(currentUser.permissions.publishProjects || currentUser.permissions.deployProduction);
 
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -138,6 +142,12 @@ export const AdminProjectEditPage: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!canUpload) {
+      addNotification('Access Denied: You do not have permission to upload media assets.', 'error');
+      e.target.value = '';
+      return;
+    }
+
     setUploadingField(target);
     try {
       let fileUrl: string | null = null;
@@ -185,11 +195,26 @@ export const AdminProjectEditPage: React.FC = () => {
       return;
     }
 
+    if (isEditing && !canEdit) {
+      addNotification('Access Denied: You do not have permission to edit projects.', 'error');
+      return;
+    }
+
+    if (!isEditing && !canAdd) {
+      addNotification('Access Denied: You do not have permission to create projects.', 'error');
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      published: canPublish ? formData.published : false,
+    };
+
     if (isEditing && id) {
-      updateProject(id, formData);
+      updateProject(id, payload);
       navigate('/admin/projects');
     } else {
-      const created = addProject(formData);
+      addProject(payload);
       navigate('/admin/projects');
     }
   };
@@ -261,8 +286,8 @@ export const AdminProjectEditPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Non-Owner Draft Mode Alert Banner */}
-      {!isOwner && (
+      {/* Non-Publishing Draft Mode Alert Banner */}
+      {!canPublish && (
         <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5">
             <Clock className="w-4 h-4 text-amber-400 shrink-0" />
@@ -367,7 +392,7 @@ export const AdminProjectEditPage: React.FC = () => {
 
             {/* Toggles */}
             <div className="pt-2 flex flex-wrap items-center gap-6">
-              {isOwner ? (
+              {canPublish ? (
                 <>
                   <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
                     <input
@@ -379,15 +404,17 @@ export const AdminProjectEditPage: React.FC = () => {
                     <span>Published (Visible on Public Showcase)</span>
                   </label>
 
-                  <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
-                    <input
-                      type="checkbox"
-                      checked={formData.featured}
-                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                      className="w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
-                    />
-                    <span>Featured Showcase on Homepage</span>
-                  </label>
+                  {isOwner && (
+                    <label className="flex items-center gap-2.5 cursor-pointer text-xs font-mono uppercase tracking-wider text-white/80">
+                      <input
+                        type="checkbox"
+                        checked={formData.featured}
+                        onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                        className="w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
+                      />
+                      <span>Featured Showcase on Homepage</span>
+                    </label>
+                  )}
                 </>
               ) : (
                 <div className="p-3.5 rounded-xl bg-[#16151B] border border-white/10 flex items-center gap-3 text-xs w-full">

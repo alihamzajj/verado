@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Smartphone, Sparkles } from 'lucide-react';
-import { GithubIcon, TwitterIcon, LinkedinIcon } from '../common/Icons';
+import { InstagramIcon, TwitterIcon, LinkedinIcon } from '../common/Icons';
 
 export const Footer: React.FC = () => {
   return (
@@ -26,12 +26,13 @@ export const Footer: React.FC = () => {
           </p>
           <div className="flex items-center gap-3 pt-2">
             <a 
-              href="https://github.com" 
+              href="https://instagram.com" 
               target="_blank" 
               rel="noreferrer"
               className="w-8 h-8 rounded-full bg-black hover:bg-[#16151B] border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              title="Instagram"
             >
-              <GithubIcon className="w-3.5 h-3.5" />
+              <InstagramIcon className="w-3.5 h-3.5" />
             </a>
             <a 
               href="https://twitter.com" 

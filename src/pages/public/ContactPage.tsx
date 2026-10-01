@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { submitContactInquiry } from '../../lib/supabase';
 
 export const ContactPage: React.FC = () => {
-  const { addNotification } = useApp();
+  const { addNotification, addInquiry } = useApp();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -38,7 +38,7 @@ export const ContactPage: React.FC = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await submitContactInquiry({
+      await addInquiry({
         name: formData.name,
         email: formData.email,
         subject: formData.subject,

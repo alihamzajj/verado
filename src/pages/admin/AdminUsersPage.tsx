@@ -20,9 +20,15 @@ import {
   Camera,
   Edit3,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Send,
+  AlertTriangle,
+  Clock,
+  Eye,
+  Edit
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { isAdministrativeRole } from '../../lib/permissions';
 import { User, Permissions, UserRole } from '../../types';
 import { Modal } from '../../components/common/Modal';
 import { EmailInviteModal } from '../../components/common/EmailInviteModal';
@@ -35,6 +41,7 @@ const ROLE_PRESETS = [
   { value: 'UI/UX Designer', label: 'UI/UX Designer', desc: 'Design Systems & App Visuals' },
   { value: 'QA Specialist', label: 'QA Specialist', desc: 'Testing, Quality & Bug Validation' },
   { value: 'Product Manager', label: 'Product Manager', desc: 'Roadmaps & Application Specs' },
+  { value: 'Admin', label: 'Admin', desc: 'Full Platform & Team Administration' },
   { value: 'Owner', label: 'Owner', desc: 'Full Executive & Delete Authority' },
 ];
 
@@ -56,9 +63,12 @@ export const AdminUsersPage: React.FC = () => {
     toggleUserStatus,
     updateUserPermissions, 
     updateUserProfile,
-    addUser, 
+    inviteEmployee,
+    resendInvitation,
+    teamInvitations,
     deleteUser, 
-    addNotification 
+    addNotification,
+    isAdministrativeUser,
   } = useApp();
 
   const navigate = useNavigate();
@@ -67,6 +77,8 @@ export const AdminUsersPage: React.FC = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [inviteModalUser, setInviteModalUser] = useState<User | null>(null);
+  const [resendingUserId, setResendingUserId] = useState<string | null>(null);
+  const [isSubmittingInvite, setIsSubmittingInvite] = useState(false);
   
   // New member form state
   const [newMember, setNewMember] = useState<{
@@ -165,10 +177,10 @@ export const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const handleAddMemberSubmit = (e: React.FormEvent) => {
+  const handleAddMemberSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isOwner) {
-      addNotification('Access Denied: Only the Studio Owner can add team members.', 'error');
+      addNotification('Access Denied: Only the Studio Owner can invite team members.', 'error');
       return;
     }
     if (!newMember.name.trim() || !newMember.email.trim()) {
@@ -176,62 +188,86 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
 
-    const effectiveRole = (newMemberRoleMode === 'custom' ? newMemberCustomRole.trim() : newMember.role) || 'Developer';
-    const finalAvatar = customPhotoUrl.trim() || getInitialsAvatar(newMember.name, selectedGradient);
+    setIsSubmittingInvite(true);
+    try {
+      const effectiveRole = (newMemberRoleMode === 'custom' ? newMemberCustomRole.trim() : newMember.role) || 'Developer';
+      const finalAvatar = customPhotoUrl.trim() || getInitialsAvatar(newMember.name, selectedGradient);
 
-    const finalPermissions: Permissions = {
-      ...newMemberPermissions,
-      customScope: newMemberCustomScope.trim() || undefined,
-    };
+      const finalPermissions: Permissions = {
+        ...newMemberPermissions,
+        customScope: newMemberCustomScope.trim() || undefined,
+      };
 
-    const createdUser = addUser({
-      name: newMember.name,
-      email: newMember.email,
-      role: effectiveRole,
-      codeAccess: newMember.codeAccess,
-      avatar: finalAvatar,
-      permissions: finalPermissions,
-    });
+      const result = await inviteEmployee({
+        name: newMember.name,
+        email: newMember.email,
+        role: effectiveRole,
+        codeAccess: newMember.codeAccess,
+        avatar: finalAvatar,
+        permissions: finalPermissions,
+      });
 
-    setNewMember({
-      name: '',
-      email: '',
-      role: 'Developer',
-      codeAccess: 'Full Access',
-    });
-    setNewMemberRoleMode('preset');
-    setNewMemberCustomRole('');
-    setNewMemberCustomScope('');
-    setShowAddPermissions(false);
-    setCustomPhotoUrl('');
-    setShowCustomPhotoInput(false);
-    setSelectedGradient('amethyst');
-    setIsAddModalOpen(false);
+      const invitedUser = result.user || users.find(u => u.email.toLowerCase() === newMember.email.trim().toLowerCase());
 
-    if (createdUser) {
-      setInviteModalUser(createdUser);
+      setNewMember({
+        name: '',
+        email: '',
+        role: 'Developer',
+        codeAccess: 'Full Access',
+      });
+      setNewMemberRoleMode('preset');
+      setNewMemberCustomRole('');
+      setNewMemberCustomScope('');
+      setShowAddPermissions(false);
+      setCustomPhotoUrl('');
+      setShowCustomPhotoInput(false);
+      setSelectedGradient('amethyst');
+      setIsAddModalOpen(false);
+
+      if (invitedUser) {
+        setInviteModalUser(invitedUser);
+      }
+    } finally {
+      setIsSubmittingInvite(false);
     }
   };
 
-  const handleAllowAndNotify = (user: User) => {
+  const handleResend = async (userId: string) => {
+    setResendingUserId(userId);
+    try {
+      await resendInvitation(userId);
+    } finally {
+      setResendingUserId(null);
+    }
+  };
+
+  const handleAllowAndNotify = async (user: User) => {
+    if (!isOwner) return;
     if (user.status !== 'Active') {
       toggleUserStatus(user.id);
     }
+    await resendInvitation(user.id);
     setInviteModalUser(user);
-    addNotification(`Authorization invitation dispatched to ${user.email}!`, 'success');
+    addNotification(`Authorization activated! Notification email dispatched to ${user.email}`, 'success');
   };
 
-  type BooleanPermissionKey = 'viewProjects' | 'addProjects' | 'editProjects' | 'codeEditor' | 'createBranch' | 'previewChanges' | 'mergeToProduction' | 'deployProduction';
+  type PermissionItemKey = 
+    | 'viewProjects' 
+    | 'addProjects' 
+    | 'editProjects' 
+    | 'uploadMedia' 
+    | 'deployProduction' 
+    | 'manageTeam' 
+    | 'deleteProjects';
 
-  const permissionItems: { key: BooleanPermissionKey; label: string; desc: string }[] = [
-    { key: 'viewProjects', label: 'View Projects', desc: 'Allows viewing of public and private app specs' },
-    { key: 'addProjects', label: 'Add Projects', desc: 'Can register new mobile applications in catalog' },
-    { key: 'editProjects', label: 'Edit Projects', desc: 'Can modify project metadata, screenshots, and URLs' },
-    { key: 'codeEditor', label: 'Code Editor', desc: 'Access and edit source code in online IDE workspace' },
-    { key: 'createBranch', label: 'Create Branch', desc: 'Allows branching feature pipelines in workspace' },
-    { key: 'previewChanges', label: 'Preview Changes', desc: 'Can generate and inspect live preview artifacts' },
-    { key: 'mergeToProduction', label: 'Merge to Production', desc: 'Permission to merge changes into main catalog' },
-    { key: 'deployProduction', label: 'Deploy Production', desc: 'Trigger App Store / Google Play production release' },
+  const permissionItems: { key: PermissionItemKey; label: string; desc: string; ownerOnly?: boolean }[] = [
+    { key: 'viewProjects', label: 'View Projects', desc: 'Allows viewing of public and private app catalog specs' },
+    { key: 'addProjects', label: 'Create Projects', desc: 'Can register and create new applications in catalog' },
+    { key: 'editProjects', label: 'Edit Projects', desc: 'Can modify project metadata, descriptions, categories, and URLs' },
+    { key: 'uploadMedia', label: 'Upload Media', desc: 'Can upload and replace app logos, covers, screenshots, and demo videos' },
+    { key: 'deployProduction', label: 'Publish to Production', desc: 'Can publish projects live to showcase without owner review' },
+    { key: 'manageTeam', label: 'Manage Team Members', desc: 'Invite, approve, assign roles, and remove employees', ownerOnly: true },
+    { key: 'deleteProjects', label: 'Delete Projects', desc: 'Permanently purge applications from platform database', ownerOnly: true },
   ];
 
   return (
@@ -266,69 +302,21 @@ export const AdminUsersPage: React.FC = () => {
               className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10" 
             />
             <div className="text-xs">
-              <span className="text-white/40 block font-mono text-[10px] uppercase">Logged in persona:</span>
-              <span className="font-bold text-white">{currentUser.name} <span className="text-violet-400 font-mono font-normal">({currentUser.role})</span></span>
+              <span className="text-white/40 block font-mono text-[10px] uppercase">Studio Administrator:</span>
+              <span className="font-bold text-white">{currentUser.name} <span className="text-amber-400 font-mono font-semibold">(👑 Studio Owner)</span></span>
             </div>
           </div>
 
-          {/* Add Team Member Button (Owner Only) */}
-          {isOwner ? (
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all cursor-pointer"
-            >
-              <UserPlus className="w-4 h-4 text-violet-400" />
-              <span>+ Add Member</span>
-            </button>
-          ) : (
-            <button
-              disabled
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#16151B]/40 text-white/30 border border-white/5 font-mono text-xs uppercase tracking-wider cursor-not-allowed"
-              title="Only Studio Owner can add team members"
-            >
-              <Lock className="w-4 h-4 text-white/20" />
-              <span>+ Add Member</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Return to Owner Session Banner if currently impersonating an employee */}
-      {!isOwner && (
-        <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-transparent border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-              <ShieldAlert className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs uppercase font-bold text-amber-300 tracking-wider">
-                  Employee Persona Active
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-amber-400/20 text-amber-300">
-                  {currentUser.role}
-                </span>
-              </div>
-              <p className="text-xs text-amber-100/90 mt-0.5">
-                You are currently viewing as employee <strong className="text-white">{currentUser.name}</strong>. Owner management actions are restricted.
-              </p>
-            </div>
-          </div>
+          {/* Add Team Member Button (Owner Full Control) */}
           <button
-            type="button"
-            onClick={() => {
-              const ownerUser = users.find(u => u.role === 'Owner') || users[0];
-              if (ownerUser) {
-                setCurrentUser(ownerUser);
-                addNotification(`Returned to Studio Owner session (${ownerUser.name})`, 'success');
-              }
-            }}
-            className="px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-black font-mono text-xs uppercase font-bold tracking-wider transition-all shrink-0 shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-2 self-start sm:self-auto"
+            onClick={() => setIsAddModalOpen(true)}
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 transition-all cursor-pointer active:scale-95"
           >
-            <span>👑 Return to Studio Owner View</span>
+            <UserPlus className="w-4 h-4 text-white" />
+            <span>+ Add Member</span>
           </button>
         </div>
-      )}
+      </div>
 
       {/* Studio Security Policy Banner */}
       <div className="p-4 rounded-2xl bg-[#0F0E11] border border-violet-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
@@ -351,8 +339,7 @@ export const AdminUsersPage: React.FC = () => {
               <tr>
                 <th className="py-4 px-6">User / Developer</th>
                 <th className="py-4 px-4">Role</th>
-                <th className="py-4 px-4">Account Status</th>
-                <th className="py-4 px-4">Release Access</th>
+                <th className="py-4 px-4">Status</th>
                 <th className="py-4 px-4">Last Active</th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
@@ -360,6 +347,7 @@ export const AdminUsersPage: React.FC = () => {
             <tbody className="divide-y divide-white/5 text-white/80">
               {users.map((user) => {
                 const isCurrent = user.id === currentUser.id;
+                const invitation = teamInvitations?.find(i => i.email.toLowerCase() === user.email.toLowerCase());
 
                 return (
                   <tr key={user.id} className={`hover:bg-white/5 transition-colors ${isCurrent ? 'bg-violet-500/5' : ''}`}>
@@ -389,74 +377,56 @@ export const AdminUsersPage: React.FC = () => {
                       </div>
                     </td>
 
-                    {/* Role & Permissions Scope */}
+                    {/* Role */}
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold ${
+                        user.role === 'Owner' 
+                          ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                          : user.role === 'Developer'
+                          ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
+                          : user.role === 'Editor'
+                          ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                          : user.role === 'Content Manager'
+                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-violet-500/10 text-violet-200 border border-violet-500/30'
+                      }`}>
+                        {user.role}
+                      </span>
+                    </td>
+
+                    {/* Status */}
                     <td className="py-4 px-4">
                       <div className="space-y-1">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase font-bold ${
-                          user.role === 'Owner' 
-                            ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
-                            : user.role === 'Developer'
-                            ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
-                            : user.role === 'Editor'
-                            ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                            : user.role === 'Content Manager'
-                            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                            : 'bg-violet-500/10 text-violet-200 border border-violet-500/30'
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold ${
+                          user.status === 'Active' 
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                            : user.status === 'Pending Invitation'
+                            ? 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                            : 'bg-white/5 text-white/40 border border-white/10'
                         }`}>
-                          {user.role}
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            user.status === 'Active' ? 'bg-emerald-400' : user.status === 'Pending Invitation' ? 'bg-amber-400 animate-pulse' : 'bg-white/40'
+                          }`} />
+                          {user.status}
                         </span>
-                        {user.permissions?.customScope && (
-                          <div className="text-[10px] font-mono text-white/50 max-w-[200px] truncate" title={user.permissions.customScope}>
-                            ↳ <span className="text-violet-300/80">{user.permissions.customScope}</span>
+
+                        {/* Real Email delivery badge */}
+                        {(user.status === 'Pending Invitation' || invitation) && (
+                          <div className="text-[10px] font-mono flex items-center gap-1">
+                            {invitation?.emailStatus === 'Sent' ? (
+                              <span className="text-emerald-400 flex items-center gap-1">
+                                <Check className="w-2.5 h-2.5" /> Email Sent
+                              </span>
+                            ) : invitation?.emailStatus === 'Failed' ? (
+                              <span className="text-rose-400 flex items-center gap-1" title={invitation?.emailError || 'Check RESEND_API_KEY'}>
+                                <AlertTriangle className="w-2.5 h-2.5" /> Email Failed
+                              </span>
+                            ) : (
+                              <span className="text-white/40 flex items-center gap-1">
+                                <Clock className="w-2.5 h-2.5" /> Dispatching...
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Status: Green Active Button */}
-                    <td className="py-4 px-4">
-                      {user.status === 'Active' ? (
-                        <button
-                          type="button"
-                          onClick={() => isOwner && !isCurrent && toggleUserStatus(user.id)}
-                          disabled={!isOwner || isCurrent}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
-                            isOwner && !isCurrent ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
-                          } bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-emerald-500/10`}
-                          title={isOwner && !isCurrent ? 'Allowed & Active. Click to Suspend.' : 'Allowed & Active'}
-                        >
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
-                          <span>Active</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleAllowAndNotify(user)}
-                          disabled={!isOwner}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
-                            isOwner ? 'cursor-pointer hover:bg-emerald-500/25 hover:text-emerald-300 hover:border-emerald-500/40 active:scale-95' : 'cursor-default'
-                          } bg-amber-500/15 text-amber-300 border border-amber-500/30`}
-                          title={isOwner ? 'Suspended. Click to Allow and dispatch email notification.' : 'Suspended'}
-                        >
-                          <span className="w-2 h-2 rounded-full bg-amber-400" />
-                          <span>Allow Access</span>
-                        </button>
-                      )}
-                    </td>
-
-                    {/* Release Access Badge */}
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-2 font-mono">
-                        {user.permissions.deployProduction ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-violet-500/10 text-violet-300 border border-violet-500/20">
-                            <ShieldCheck className="w-3 h-3 text-violet-400" />
-                            Full Release Access
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-[#16151B] text-white/60 border border-white/10">
-                            <Check className="w-3 h-3 text-violet-400" />
-                            Catalog Editor
-                          </span>
                         )}
                       </div>
                     </td>
@@ -477,66 +447,57 @@ export const AdminUsersPage: React.FC = () => {
                           </span>
                         ) : (
                           <>
-                            {/* 1-Click Allow & Email Notification */}
+                            {/* Resend Invite button if pending or email failed */}
+                            {isOwner && (user.status === 'Pending Invitation' || invitation?.emailStatus === 'Failed') && (
+                              <button
+                                type="button"
+                                onClick={() => handleResend(user.id)}
+                                disabled={resendingUserId === user.id}
+                                className="px-3 py-1.5 rounded-full bg-violet-500/15 hover:bg-violet-500/25 text-violet-300 border border-violet-500/30 font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                                title={`Resend invitation email to ${user.email}`}
+                              >
+                                {resendingUserId === user.id ? (
+                                  <span className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Send className="w-3 h-3 text-violet-400" />
+                                )}
+                                <span>Resend Invite</span>
+                              </button>
+                            )}
+
+                            {/* Permissions configuration */}
                             <button
-                              type="button"
-                              onClick={() => handleAllowAndNotify(user)}
-                              className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                              title={`Allow ${user.name} and send email notification to ${user.email}`}
+                              onClick={() => handleOpenPermissions(user)}
+                              disabled={!isOwner}
+                              className={`p-2 rounded-full border text-xs font-semibold flex items-center transition-colors uppercase tracking-wider ${
+                                isOwner
+                                  ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
+                                  : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
+                              }`}
+                              title={isOwner ? `Edit Role & Details for ${user.name}` : 'Only Studio Owner can configure members'}
                             >
-                              <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Allow & Send Email</span>
+                              <Sliders className="w-3.5 h-3.5 text-violet-400" />
                             </button>
 
-                            {/* Intuitive Session / Login Button */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                loginAsUser(user.id);
-                                navigate('/admin');
-                              }}
-                              className="px-3 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-[11px] uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
-                              title={`Log in and enter dashboard as ${user.name}`}
-                            >
-                              <UserCheck className="w-3.5 h-3.5 text-violet-400" />
-                              <span>Log in</span>
-                            </button>
+                            {/* Remove Employee button (Only Owner has option to remove employee) */}
+                            {isOwner ? (
+                              <button
+                                onClick={() => setUserToDelete(user)}
+                                className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                                title={`Remove ${user.name} from studio team`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                disabled
+                                className="p-2 rounded-full bg-white/5 text-white/20 border border-white/5 cursor-not-allowed"
+                                title="Only Studio Owner can remove team members"
+                              >
+                                <Lock className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </>
-                        )}
-
-                        {/* Permissions & Profile configuration */}
-                        <button
-                          onClick={() => handleOpenPermissions(user)}
-                          disabled={!isOwner}
-                          className={`p-2 rounded-full border text-xs font-semibold flex items-center transition-colors uppercase tracking-wider ${
-                            isOwner
-                              ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
-                              : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
-                          }`}
-                          title={isOwner ? `Edit Profile & Permissions for ${user.name}` : 'Only Studio Owner can configure permissions'}
-                        >
-                          <Sliders className="w-3.5 h-3.5 text-violet-400" />
-                        </button>
-
-                        {/* Remove Team Member button (Owner Only, Cannot delete self) */}
-                        {!isCurrent && (
-                          isOwner ? (
-                            <button
-                              onClick={() => setUserToDelete(user)}
-                              className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
-                              title={`Remove ${user.name} from studio team`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="p-2 rounded-full bg-white/5 text-white/20 border border-white/5 cursor-not-allowed"
-                              title="Only Studio Owner can remove team members"
-                            >
-                              <Lock className="w-3.5 h-3.5" />
-                            </button>
-                          )
                         )}
 
                       </div>
@@ -828,31 +789,45 @@ export const AdminUsersPage: React.FC = () => {
               {showAddPermissions && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-2xl bg-[#0F0E11] border border-white/10">
                   {permissionItems.map((item) => {
-                    const isChecked = Boolean(newMemberPermissions[item.key]);
+                    const effectiveRole = newMemberRoleMode === 'custom' ? newMemberCustomRole.trim() : newMember.role;
+                    const isLockedToOwner = Boolean(item.ownerOnly && !isAdministrativeRole(effectiveRole));
+                    const isChecked = isLockedToOwner ? false : Boolean(newMemberPermissions[item.key]);
+
                     return (
                       <label 
                         key={item.key}
-                        className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 ${
-                          isChecked 
-                            ? 'bg-[#16151B] border-violet-500/40 shadow-sm' 
-                            : 'bg-[#16151B]/40 border-white/5 opacity-60'
+                        className={`p-2.5 rounded-xl border transition-all flex items-start gap-2.5 ${
+                          isLockedToOwner 
+                            ? 'bg-[#16151B]/30 border-white/5 opacity-50 cursor-not-allowed'
+                            : isChecked 
+                            ? 'bg-[#16151B] border-violet-500/40 shadow-sm cursor-pointer' 
+                            : 'bg-[#16151B]/40 border-white/5 opacity-60 cursor-pointer'
                         }`}
                       >
                         <input
                           type="checkbox"
+                          disabled={isLockedToOwner}
                           checked={isChecked}
                           onChange={(e) => {
+                            if (isLockedToOwner) return;
                             setNewMemberPermissions(prev => ({
                               ...prev,
                               [item.key]: e.target.checked
                             }));
                           }}
-                          className="mt-0.5 w-3.5 h-3.5 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
+                          className="mt-0.5 w-3.5 h-3.5 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20 disabled:opacity-40"
                         />
                         <div className="min-w-0">
-                          <span className={`text-[11px] font-bold block ${isChecked ? 'text-white' : 'text-white/60'}`}>
-                            {item.label}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-[11px] font-bold block ${isChecked ? 'text-white' : 'text-white/60'}`}>
+                              {item.label}
+                            </span>
+                            {isLockedToOwner && (
+                              <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                                <Lock className="w-2 h-2" /> Owner
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[9px] text-white/50 leading-tight">
                             {item.desc}
                           </p>
@@ -884,9 +859,20 @@ export const AdminUsersPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer"
+                disabled={isSubmittingInvite}
+                className="px-6 py-2.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Add Member
+                {isSubmittingInvite ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+                    <span>Sending Invite...</span>
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-3.5 h-3.5 text-violet-400" />
+                    <span>Send Invite</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -1181,28 +1167,34 @@ export const AdminUsersPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {permissionItems.map((item) => {
-                  const isChecked = Boolean(modalPermissions[item.key]);
+                  const effectiveRole = modalRoleMode === 'custom' ? modalCustomRole.trim() : modalRole;
+                  const isLockedToOwner = Boolean(item.ownerOnly && !isAdministrativeRole(effectiveRole));
+                  const isChecked = isLockedToOwner ? false : Boolean(modalPermissions[item.key]);
                   const isDeployToggle = item.key === 'deployProduction';
 
                   return (
                     <label 
                       key={item.key}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start gap-3 ${
-                        isChecked 
-                          ? 'bg-[#16151B] border-violet-500/40 shadow-sm' 
-                          : 'bg-[#16151B]/40 border-white/5 opacity-60'
+                      className={`p-3.5 rounded-2xl border transition-all flex items-start gap-3 ${
+                        isLockedToOwner
+                          ? 'bg-[#16151B]/30 border-white/5 opacity-50 cursor-not-allowed'
+                          : isChecked 
+                          ? 'bg-[#16151B] border-violet-500/40 shadow-sm cursor-pointer' 
+                          : 'bg-[#16151B]/40 border-white/5 opacity-60 cursor-pointer'
                       }`}
                     >
                       <input
                         type="checkbox"
+                        disabled={isLockedToOwner}
                         checked={isChecked}
                         onChange={(e) => {
+                          if (isLockedToOwner) return;
                           setModalPermissions(prev => ({
                             ...prev,
                             [item.key]: e.target.checked
                           }));
                         }}
-                        className="mt-0.5 w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20"
+                        className="mt-0.5 w-4 h-4 rounded text-violet-500 focus:ring-violet-400 bg-[#16151B] border-white/20 disabled:opacity-40"
                       />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -1212,6 +1204,11 @@ export const AdminUsersPage: React.FC = () => {
                           {isDeployToggle && (
                             <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase bg-violet-500/20 text-violet-300">
                               Release
+                            </span>
+                          )}
+                          {isLockedToOwner && (
+                            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                              <Lock className="w-2.5 h-2.5" /> Studio Owner Only
                             </span>
                           )}
                         </div>

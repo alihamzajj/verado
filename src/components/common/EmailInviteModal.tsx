@@ -20,7 +20,7 @@ export const EmailInviteModal: React.FC<EmailInviteModalProps> = ({
 
   if (!user) return null;
 
-  const simulatedInviteUrl = `${window.location.origin}/admin?invite=${user.id}&auth=${btoa(user.email)}`;
+  const simulatedInviteUrl = `${window.location.origin}/submit-project?invite=${user.invitationToken || user.id}&email=${encodeURIComponent(user.email)}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(simulatedInviteUrl);
@@ -85,7 +85,7 @@ export const EmailInviteModal: React.FC<EmailInviteModalProps> = ({
             </p>
             <p className="text-xs sm:text-sm text-white/70 leading-relaxed">
               Your assigned role is <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase bg-violet-500/20 text-violet-300 border border-violet-500/30">{user.role}</span>.
-              You now have full authority to draft new applications, update product specifications, and submit releases for review.
+              You now have full authority to add and draft new applications for the showcase.
             </p>
           </div>
 
@@ -96,42 +96,39 @@ export const EmailInviteModal: React.FC<EmailInviteModalProps> = ({
             </span>
             <div className="flex flex-wrap gap-2 text-[11px] font-mono">
               <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1.5">
-                <Check className="w-3 h-3" /> Catalog Access
+                <Check className="w-3 h-3" /> Add Applications
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1.5">
-                <Check className="w-3 h-3" /> Draft Applications
+                <Check className="w-3 h-3" /> Edit Submissions
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-300 border border-violet-500/20 flex items-center gap-1.5">
                 <ShieldCheck className="w-3 h-3" /> Code Access: {user.codeAccess || 'Read Only'}
               </span>
-              {user.permissions?.customScope && (
-                <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1.5 w-full">
-                  ↳ Custom Rule: {user.permissions.customScope}
-                </span>
-              )}
             </div>
           </div>
 
-          {/* Primary Action Button to Land Directly on Dashboard */}
+          {/* Primary Action Button to Land Directly on Project Add Portal */}
           <div className="pt-2 text-center space-y-3">
-            <button
-              onClick={() => onAcceptAndLaunch(user)}
-              className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono text-xs sm:text-sm uppercase tracking-wider font-extrabold shadow-2xl shadow-violet-600/30 flex items-center justify-center gap-2.5 mx-auto transition-all cursor-pointer transform hover:scale-[1.02]"
+            <a
+              href={simulatedInviteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono text-xs sm:text-sm uppercase tracking-wider font-extrabold shadow-2xl shadow-violet-600/30 inline-flex items-center justify-center gap-2.5 mx-auto transition-all cursor-pointer transform hover:scale-[1.02]"
             >
-              <span>Accept Invitation & Open Studio Dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <span>Add Your Project to Verado →</span>
+            </a>
             <p className="text-[11px] text-white/40 font-mono">
-              Clicking this button lands directly on the Admin Dashboard logged in as <strong className="text-white">{user.name}</strong>.
+              Clicking lands directly on the Project Add screen for <strong className="text-white">{user.name}</strong> (no admin access).
             </p>
           </div>
         </div>
 
-        {/* Copy Direct Magic Link Option */}
+        {/* Copy Direct Contributor Link */}
         <div className="p-4 rounded-2xl bg-[#16151B] border border-white/10 space-y-2">
           <div className="flex items-center justify-between">
             <label className="font-mono text-[11px] uppercase tracking-wider text-white/60 font-bold">
-              Direct Dashboard Access Link
+              Direct Contributor Access Link
             </label>
             <button
               onClick={handleCopyLink}
@@ -145,7 +142,7 @@ export const EmailInviteModal: React.FC<EmailInviteModalProps> = ({
               ) : (
                 <>
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Copy Magic Link</span>
+                  <span>Copy Contributor Link</span>
                 </>
               )}
             </button>
@@ -166,12 +163,15 @@ export const EmailInviteModal: React.FC<EmailInviteModalProps> = ({
           >
             Close
           </button>
-          <button
-            onClick={() => onAcceptAndLaunch(user)}
-            className="px-6 py-2.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl cursor-pointer"
+          <a
+            href={simulatedInviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="px-6 py-2.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 transition-all cursor-pointer inline-flex items-center gap-2"
           >
-            Enter Dashboard As {user.name.split(' ')[0]} →
-          </button>
+            <span>Open Project Portal As {user.name.split(' ')[0]} →</span>
+          </a>
         </div>
 
       </div>

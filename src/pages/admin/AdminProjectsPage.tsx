@@ -36,10 +36,13 @@ export const AdminProjectsPage: React.FC = () => {
     toggleProjectPublish, 
     toggleProjectFeatured, 
     currentUser, 
-    addNotification 
+    addNotification,
+    isAdministrativeUser
   } = useApp();
 
-  const isOwner = currentUser.role === 'Owner';
+  const isOwner = isAdministrativeUser(currentUser);
+  const canAdd = isOwner || currentUser.permissions.addProjects !== false;
+  const canEdit = isOwner || currentUser.permissions.editProjects !== false;
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
@@ -131,13 +134,15 @@ export const AdminProjectsPage: React.FC = () => {
             </button>
           </div>
 
-          <Link
-            to="/admin/projects/new"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all"
-          >
-            <Plus className="w-4 h-4 text-violet-400" />
-            <span>+ Add Project</span>
-          </Link>
+          {canAdd && (
+            <Link
+              to="/admin/projects/new"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all"
+            >
+              <Plus className="w-4 h-4 text-violet-400" />
+              <span>+ Add Project</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -400,30 +405,24 @@ export const AdminProjectsPage: React.FC = () => {
                           )}
 
                           {/* Edit */}
-                          <Link
-                            to={`/admin/projects/${project.id}/edit`}
-                            className="p-2 rounded-full bg-[#16151B] hover:bg-black text-white/70 hover:text-violet-300 border border-white/10 hover:border-violet-400/50 transition-colors"
-                            title="Edit Project Details"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                          </Link>
+                          {canEdit && (
+                            <Link
+                              to={`/admin/projects/${project.id}/edit`}
+                              className="p-2 rounded-full bg-[#16151B] hover:bg-black text-white/70 hover:text-violet-300 border border-white/10 hover:border-violet-400/50 transition-colors"
+                              title="Edit Project Details"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
 
-                          {/* Owner Manage (Archive or Delete) */}
-                          {isOwner ? (
+                          {/* Owner Manage (Archive or Delete) - Strictly Owner Only */}
+                          {isOwner && (
                             <button
                               onClick={() => setProjectToManage(project.id)}
                               className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/70 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
                               title={isArchived ? "Permanently Purge Project" : "Archive or Delete Project (Owner Only)"}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="p-2 rounded-full bg-[#16151B]/40 text-white/20 border border-white/5 cursor-not-allowed"
-                              title="Archive and Delete permission restricted to Studio Owner"
-                            >
-                              <Lock className="w-3.5 h-3.5" />
                             </button>
                           )}
 
@@ -520,28 +519,22 @@ export const AdminProjectsPage: React.FC = () => {
                       </button>
                     )}
 
-                    <Link
-                      to={`/admin/projects/${project.id}/edit`}
-                      className="px-4 py-1.5 rounded-full bg-[#16151B] hover:bg-black text-white border border-white/10 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider"
-                    >
-                      Edit
-                    </Link>
+                    {canEdit && (
+                      <Link
+                        to={`/admin/projects/${project.id}/edit`}
+                        className="px-4 py-1.5 rounded-full bg-[#16151B] hover:bg-black text-white border border-white/10 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider"
+                      >
+                        Edit
+                      </Link>
+                    )}
 
-                    {isOwner ? (
+                    {isOwner && (
                       <button
                         onClick={() => setProjectToManage(project.id)}
                         className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 cursor-pointer"
                         title="Manage Archive / Delete (Owner Only)"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <button
-                        disabled
-                        className="p-2 rounded-full bg-[#16151B]/40 text-white/20 border border-white/5 cursor-not-allowed"
-                        title="Delete permission restricted to Studio Owner"
-                      >
-                        <Lock className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>

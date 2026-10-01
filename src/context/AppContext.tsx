@@ -1,7 +1,25 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, User, Permissions, UserRole, ActivityItem, CodeFile } from '../types';
+import { Project, User, Permissions, UserRole, ActivityItem, CodeFile, TeamInvitation, ContactInquiry } from '../types';
 import { INITIAL_PROJECTS, INITIAL_USERS, INITIAL_ACTIVITIES, MOCK_CODE_FILES } from '../data/mockData';
-import { isSupabaseConfigured, fetchProjectsFromSupabase, upsertProjectToSupabase, deleteProjectFromSupabase } from '../lib/supabase';
+import { 
+  isSupabaseConfigured, 
+  fetchProjectsFromSupabase, 
+  upsertProjectToSupabase, 
+  deleteProjectFromSupabase,
+  fetchTeamMembersFromSupabase,
+  upsertTeamMemberToSupabase,
+  deleteTeamMemberFromSupabase,
+  fetchTeamInvitationsFromSupabase,
+  upsertTeamInvitationToSupabase,
+  fetchActivityLogsFromSupabase,
+  insertActivityLogToSupabase,
+  fetchStudioSettings,
+  fetchInquiriesFromSupabase,
+  submitContactInquiry,
+  markInquiryAsReadInSupabase,
+  deleteInquiryFromSupabase
+} from '../lib/supabase';
+import { sendEmployeeInvitationEmail } from '../lib/email';
 import { getInitialsAvatar } from '../lib/avatar';
 
 interface NotificationItem {
@@ -9,6 +27,8 @@ interface NotificationItem {
   message: string;
   type: 'success' | 'info' | 'warning' | 'error';
 }
+import { isAdministrativeRole, isAdministrativeUser } from '../lib/permissions';
+export { isAdministrativeRole, isAdministrativeUser };
 
 interface AppContextType {
   projects: Project[];
@@ -31,6 +51,19 @@ interface AppContextType {
   updateUserPermissions: (userId: string, permissions: Partial<Permissions>, role?: UserRole) => void;
   updateUserProfile: (userId: string, updates: { name?: string; email?: string; avatar?: string; role?: UserRole }) => void;
   
+  teamInvitations: TeamInvitation[];
+  inviteEmployee: (data: {
+    name: string;
+    email: string;
+    role: UserRole;
+    permissions?: Partial<Permissions>;
+    avatar?: string;
+    codeAccess?: 'Full Access' | 'Read Only' | 'Locked';
+  }) => Promise<{ success: boolean; emailStatus: 'Sent' | 'Failed'; inviteUrl: string; error?: string; user?: User }>;
+  resendInvitation: (userOrInvitationId: string) => Promise<{ success: boolean; emailStatus: 'Sent' | 'Failed'; error?: string }>;
+  acceptInvitation: (token: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
+  isAdministrativeUser: (user?: User | null) => boolean;
+
   activities: ActivityItem[];
   addActivity: (activity: Omit<ActivityItem, 'id' | 'timestamp'>) => void;
   
@@ -46,6 +79,12 @@ interface AppContextType {
   notifications: NotificationItem[];
   addNotification: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void;
   removeNotification: (id: string) => void;
+
+  inquiries: ContactInquiry[];
+  unreadInquiriesCount: number;
+  addInquiry: (inquiryData: { name: string; email: string; subject?: string; category?: string; message: string }) => Promise<boolean>;
+  markInquiryAsRead: (id: string) => void;
+  deleteInquiry: (id: string) => void;
 
   isDarkTheme: boolean;
   toggleTheme: () => void;
@@ -75,33 +114,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const storedName = localStorage.getItem('verado_owner_name');
       const storedAvatar = localStorage.getItem('verado_owner_avatar');
 
-      if (storedEmail || storedName || storedAvatar) {
-        parsed = parsed.map((u: User) => {
-          if (u.role === 'Owner') {
-            return {
-              ...u,
-              email: storedEmail || u.email,
-              name: storedName || u.name,
-              avatar: storedAvatar || u.avatar,
-            };
-          }
-          return u;
-        });
-      }
+      // Ensure ali or primary admin is ALWAYS the Studio Owner
+      const hasOwner = parsed.some((u: User) => u.role === 'Owner');
+      parsed = parsed.map((u: User, idx: number) => {
+        const isAli = u.email.toLowerCase().includes('alihamza') || u.name.toLowerCase() === 'ali';
+        const isStored = Boolean(storedEmail && u.email.toLowerCase() === storedEmail.toLowerCase());
+        const shouldBeOwner = u.role === 'Owner' || isAli || isStored || (!hasOwner && idx === 0);
+
+        if (shouldBeOwner) {
+          return {
+            ...u,
+            role: 'Owner' as const,
+            status: 'Active' as const,
+            email: storedEmail || u.email,
+            name: storedName || u.name,
+            avatar: storedAvatar || u.avatar,
+            permissions: {
+              ...u.permissions,
+              viewProjects: true,
+              addProjects: true,
+              editProjects: true,
+              deleteProjects: true,
+              publishProjects: true,
+              deployProduction: true,
+              uploadMedia: true,
+              manageTeam: true,
+              codeEditor: true,
+              createBranch: true,
+              previewChanges: true,
+              mergeToProduction: true,
+            },
+          };
+        }
+        return u;
+      });
+
       return parsed;
     } catch {
       return INITIAL_USERS;
     }
   });
 
-  // Current logged in mock user (Default to Alex Rivera - Owner)
-  const [currentUserId, setCurrentUserId] = useState<string>(() => {
-    try {
-      return localStorage.getItem('apex_current_user_id') || 'u-1';
-    } catch {
-      return 'u-1';
-    }
-  });
+  // Current logged in user is ALWAYS the Studio Owner (No demotions, no switching away from Admin)
+  const [currentUserId, setCurrentUserId] = useState<string>('u-1');
 
   // Activities state
   const [activities, setActivities] = useState<ActivityItem[]>(() => {
@@ -113,6 +168,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   });
 
+  // Team Invitations state
+  const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>(() => {
+    try {
+      const saved = localStorage.getItem('apex_invitations');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Code editor state
   const [codeFiles, setCodeFiles] = useState<CodeFile[]>(MOCK_CODE_FILES);
   const [activeFilePath, setActiveFilePath] = useState<string>('app/page.tsx');
@@ -121,6 +186,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Notifications / toasts
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  // Inquiries / Messages state
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>(() => {
+    try {
+      const saved = localStorage.getItem('verado_inquiries');
+      if (saved) return JSON.parse(saved);
+      return [
+        {
+          id: 'inq-sample-1',
+          name: 'Sarah Jenkins',
+          email: 'sarah.j@novalabs.io',
+          subject: 'Enterprise Partnership & App Licensing',
+          category: 'Enterprise Partnership',
+          message: 'Hello Verado team, we love your mobile showcase portfolio. We are interested in licensing ShoeCheck AI and integrating your verification models into our platform. What are your commercial terms?',
+          createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+          isRead: false,
+        },
+        {
+          id: 'inq-sample-2',
+          name: 'David Thorne',
+          email: 'd.thorne@apexventures.co',
+          subject: 'App Store Collaboration / Seed Investment',
+          category: 'Investment',
+          message: 'Hi Ali, impressive mobile architecture and clean UI execution. We would like to connect regarding your roadmap for Q4 and potential syndication opportunities.',
+          createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
+          isRead: false,
+        }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
 
   // Dark Theme (Locked to luxury amethyst crystal design)
   const isDarkTheme = true;
@@ -139,16 +237,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Load from Supabase on start if configured
   useEffect(() => {
     if (isSupabaseConfigured()) {
+      // 1. Projects
       fetchProjectsFromSupabase().then((remoteProjects) => {
         if (remoteProjects && remoteProjects.length > 0) {
           setProjects(remoteProjects);
           setIsSupabaseLive(true);
         }
       });
+
+      // 2. Team Members
+      fetchTeamMembersFromSupabase().then((remoteMembers) => {
+        if (remoteMembers && remoteMembers.length > 0) {
+          setUsers(prev => {
+            const merged = [...remoteMembers];
+            prev.forEach(p => {
+              if (!merged.some(m => m.email.toLowerCase() === p.email.toLowerCase())) {
+                merged.push(p);
+              }
+            });
+            return merged;
+          });
+        }
+      });
+
+      // 3. Team Invitations
+      fetchTeamInvitationsFromSupabase().then((remoteInvs) => {
+        if (remoteInvs && remoteInvs.length > 0) {
+          setTeamInvitations(remoteInvs);
+        }
+      });
+
+      // 4. Activity Logs
+      fetchActivityLogsFromSupabase().then((remoteActs) => {
+        if (remoteActs && remoteActs.length > 0) {
+          setActivities(remoteActs);
+        }
+      });
+
+      // 5. Studio Settings
+      fetchStudioSettings().then((remoteSettings) => {
+        if (remoteSettings?.ownerEmail) {
+          setUsers(prev => prev.map(u => u.role === 'Owner' ? { ...u, email: remoteSettings.ownerEmail } : u));
+        }
+      });
+
+      // 6. Contact Inquiries
+      fetchInquiriesFromSupabase().then((remoteInqs) => {
+        if (remoteInqs && remoteInqs.length > 0) {
+          setInquiries(prev => {
+            const merged = [...remoteInqs];
+            prev.forEach(p => {
+              if (!merged.some(m => m.id === p.id)) {
+                merged.push(p);
+              }
+            });
+            return merged;
+          });
+        }
+      });
     }
   }, []);
 
   // Sync to localStorage as local cache
+  useEffect(() => {
+    try {
+      localStorage.setItem('verado_inquiries', JSON.stringify(inquiries));
+    } catch (e) {
+      console.warn('Could not save inquiries to localStorage', e);
+    }
+  }, [inquiries]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('apex_invitations', JSON.stringify(teamInvitations));
+    } catch (e) {
+      console.warn('Could not save invitations to localStorage', e);
+    }
+  }, [teamInvitations]);
   useEffect(() => {
     try {
       localStorage.setItem('apex_projects', JSON.stringify(projects));
@@ -173,7 +338,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentUserId]);
 
-  const currentUser = users.find(u => u.id === currentUserId) || users[0];
+  // In Admin dashboard, the active user is ALWAYS the Studio Owner (Admin is always Admin)
+  const currentUser = users.find(u => u.role === 'Owner') || users.find(u => isAdministrativeUser(u)) || users[0];
 
   const addNotification = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -190,7 +356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const toggleTheme = () => {};
 
   const addProject = (projectData: Omit<Project, 'id' | 'lastUpdated' | 'rating' | 'reviewsCount' | 'downloads'>): Project => {
-    const isOwner = currentUser.role === 'Owner';
+    const isOwner = isAdministrativeUser(currentUser);
     const newId = projectData.name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random() * 1000);
     
     // Non-owner team submissions are created as Drafts pending Owner review
@@ -237,7 +403,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateProject = (id: string, updates: Partial<Project>) => {
-    const isOwner = currentUser.role === 'Owner';
+    const isOwner = isAdministrativeUser(currentUser);
     setProjects(prev => prev.map(p => {
       if (p.id === id) {
         const safeUpdates = { ...updates };
@@ -349,8 +515,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Permanent Delete (Hard Delete: Purges from cloud & state)
   const deleteProject = (id: string) => {
-    if (currentUser.role !== 'Owner') {
-      addNotification('Access Denied: Only the Studio Owner has authority to permanently delete projects.', 'error');
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Access Denied: Only the Studio Owner or Admin has authority to permanently delete projects.', 'error');
       return;
     }
     const target = projects.find(p => p.id === id);
@@ -369,8 +535,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleProjectPublish = (id: string) => {
-    if (currentUser.role !== 'Owner') {
-      addNotification('Review Required: Only the Studio Owner can publish projects to the live showcase.', 'warning');
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Review Required: Only the Studio Owner or Admin can publish projects to the live showcase.', 'warning');
       return;
     }
     setProjects(prev => prev.map(p => {
@@ -398,6 +564,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleProjectFeatured = (id: string) => {
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Featured control restricted to Studio Owner or Admin.', 'warning');
+      return;
+    }
     setProjects(prev => prev.map(p => {
       if (p.id === id) {
         const newFeatured = !p.featured;
@@ -423,130 +593,274 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }): User | null => {
-    if (currentUser.role !== 'Owner') {
-      addNotification('Access Denied: Only the Studio Owner can add team members.', 'error');
-      return null;
+  const inviteEmployee = async (data: {
+    name: string;
+    email: string;
+    role: UserRole;
+    permissions?: Partial<Permissions>;
+    avatar?: string;
+    codeAccess?: 'Full Access' | 'Read Only' | 'Locked';
+  }): Promise<{ success: boolean; emailStatus: 'Sent' | 'Failed'; inviteUrl: string; error?: string; user?: User }> => {
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Access Denied: Only Studio Owner or Admin can invite team members.', 'error');
+      return { success: false, emailStatus: 'Failed', inviteUrl: '', error: 'Owner or Admin authority required' };
     }
 
-    const trimmedName = userData.name.trim();
-    const trimmedEmail = userData.email.trim();
+    const trimmedName = data.name.trim();
+    const trimmedEmail = data.email.trim();
 
     if (!trimmedName || !trimmedEmail) {
-      addNotification('Name and email are required to add a team member.', 'error');
-      return null;
+      addNotification('Employee name and email address are required.', 'error');
+      return { success: false, emailStatus: 'Failed', inviteUrl: '', error: 'Name and email are required' };
     }
 
-    const isTargetOwner = userData.role === 'Owner';
+    const isTargetAdmin = isAdministrativeRole(data.role);
 
-    const permissions: Permissions = {
+    // Granular permissions with strict Owner/Admin locks
+    const finalPermissions: Permissions = {
       viewProjects: true,
-      addProjects: true,
+      addProjects: data.role === 'Developer' || data.role === 'Content Manager' || isTargetAdmin,
       editProjects: true,
-      createBranch: userData.role === 'Developer' || isTargetOwner,
+      uploadMedia: true,
+      publishProjects: isTargetAdmin,
+      deployProduction: isTargetAdmin,
+      codeEditor: data.role === 'Developer' || isTargetAdmin,
+      createBranch: data.role === 'Developer' || isTargetAdmin,
       previewChanges: true,
-      codeEditor: userData.role === 'Developer' || isTargetOwner,
-      mergeToProduction: isTargetOwner,
-      deployProduction: isTargetOwner,
-      ...userData.permissions,
-      // Security policy: deleteProjects and manageTeam are strictly reserved for Owner
-      deleteProjects: isTargetOwner,
-      manageTeam: isTargetOwner,
+      mergeToProduction: isTargetAdmin,
+      ...data.permissions,
+      // Security policy: deleteProjects and manageTeam are strictly reserved for Owner and Admin
+      deleteProjects: isTargetAdmin,
+      manageTeam: isTargetAdmin,
     };
 
-    const assignedAvatar = userData.avatar || getInitialsAvatar(trimmedName);
+    const token = 'inv_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    const assignedAvatar = data.avatar || getInitialsAvatar(trimmedName);
 
-    // Prevent add conflict: if email already exists, smoothly update and reactivate them
+    const newInvitation: TeamInvitation = {
+      id: 'inv-' + Math.random().toString(36).substring(2, 8),
+      email: trimmedEmail,
+      name: trimmedName,
+      role: data.role,
+      permissions: finalPermissions,
+      token,
+      status: 'Pending',
+      emailStatus: 'Pending',
+      invitedBy: currentUser.name,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    // Send real invitation email via Resend or Supabase Edge Function
+    const emailResult = await sendEmployeeInvitationEmail(newInvitation, currentUser.name);
+
+    newInvitation.emailStatus = emailResult.status;
+    newInvitation.emailError = emailResult.error;
+
+    // Create or update member in team list with 'Pending Invitation' status
     const existingIndex = users.findIndex(u => u.email.toLowerCase() === trimmedEmail.toLowerCase());
+    let targetUser: User;
+
     if (existingIndex >= 0) {
-      const existingUser = users[existingIndex];
-      const updatedUser: User = {
-        ...existingUser,
+      targetUser = {
+        ...users[existingIndex],
         name: trimmedName,
-        role: userData.role,
-        avatar: assignedAvatar || existingUser.avatar,
-        status: 'Active',
-        codeAccess: userData.codeAccess || existingUser.codeAccess,
-        permissions: {
-          ...existingUser.permissions,
-          ...permissions,
-          deleteProjects: isTargetOwner,
-          manageTeam: isTargetOwner,
-        },
+        role: data.role,
+        avatar: assignedAvatar || users[existingIndex].avatar,
+        status: 'Pending Invitation',
+        permissions: finalPermissions,
+        codeAccess: data.codeAccess || users[existingIndex].codeAccess,
+        emailStatus: emailResult.status,
+        invitationToken: token,
+        invitedAt: new Date().toISOString(),
+        invitedBy: currentUser.name,
       };
-
-      setUsers(prev => prev.map((u, i) => i === existingIndex ? updatedUser : u));
-
-      addActivity({
-        user: currentUser.name,
-        avatar: currentUser.avatar,
-        action: `Re-authorized & updated member "${updatedUser.name}" (${updatedUser.role})`,
-        target: updatedUser.role,
-        type: 'user',
-      });
-
-      addNotification(`Team member "${updatedUser.name}" successfully updated & allowed as Active!`, 'success');
-      return updatedUser;
+      setUsers(prev => prev.map((u, i) => i === existingIndex ? targetUser : u));
+    } else {
+      targetUser = {
+        id: 'u-' + Math.random().toString(36).substring(2, 8),
+        name: trimmedName,
+        email: trimmedEmail,
+        avatar: assignedAvatar,
+        role: data.role,
+        status: 'Pending Invitation',
+        codeAccess: data.codeAccess || (data.role === 'Developer' ? 'Full Access' : 'Read Only'),
+        permissions: finalPermissions,
+        lastActive: 'Invited just now',
+        emailStatus: emailResult.status,
+        invitationToken: token,
+        invitedAt: new Date().toISOString(),
+        invitedBy: currentUser.name,
+      };
+      setUsers(prev => [...prev, targetUser]);
     }
 
-    const newId = 'u-' + Math.random().toString(36).substring(2, 8);
-    const newUser: User = {
-      id: newId,
-      name: trimmedName,
-      email: trimmedEmail,
-      avatar: assignedAvatar,
-      role: userData.role,
-      status: 'Active',
-      codeAccess: userData.codeAccess || (userData.role === 'Developer' ? 'Full Access' : 'Read Only'),
-      permissions,
-      lastActive: 'Just joined',
-    };
+    setTeamInvitations(prev => [newInvitation, ...prev.filter(inv => inv.email.toLowerCase() !== trimmedEmail.toLowerCase())]);
 
-    setUsers(prev => [...prev, newUser]);
+    // Persist to Supabase
+    upsertTeamMemberToSupabase(targetUser);
+    upsertTeamInvitationToSupabase(newInvitation);
 
     addActivity({
       user: currentUser.name,
       avatar: currentUser.avatar,
-      action: `Added ${newUser.name} as ${newUser.role} to the studio team`,
-      target: newUser.role,
+      action: `Invited ${targetUser.name} (${targetUser.email}) as ${targetUser.role}`,
+      target: targetUser.role,
       type: 'user',
     });
 
-    addNotification(`Team member "${newUser.name}" added successfully as ${newUser.role}!`, 'success');
-    return newUser;
+    if (emailResult.success) {
+      addNotification(`Invitation email dispatched via Resend to ${trimmedEmail}!`, 'success');
+    } else {
+      addNotification(`Invitation created for ${trimmedEmail}. Email status: Failed (${emailResult.error || 'Configure RESEND_API_KEY'})`, 'warning');
+    }
+
+    return {
+      success: true,
+      emailStatus: emailResult.status,
+      inviteUrl: emailResult.inviteUrl,
+      error: emailResult.error,
+      user: targetUser,
+    };
+  };
+
+  const resendInvitation = async (userOrInvitationId: string): Promise<{ success: boolean; emailStatus: 'Sent' | 'Failed'; error?: string }> => {
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Access Denied: Only Studio Owner or Admin can resend invitations.', 'error');
+      return { success: false, emailStatus: 'Failed', error: 'Owner or Admin authority required' };
+    }
+
+    const targetUser = users.find(u => u.id === userOrInvitationId || u.email.toLowerCase() === userOrInvitationId.toLowerCase());
+    if (!targetUser) {
+      addNotification('Employee not found.', 'error');
+      return { success: false, emailStatus: 'Failed', error: 'User not found' };
+    }
+
+    const token = targetUser.invitationToken || ('inv_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
+
+    const invitation: TeamInvitation = {
+      id: 'inv-' + Math.random().toString(36).substring(2, 8),
+      email: targetUser.email,
+      name: targetUser.name,
+      role: targetUser.role,
+      permissions: targetUser.permissions,
+      token,
+      status: 'Pending',
+      emailStatus: 'Pending',
+      invitedBy: currentUser.name,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    const emailResult = await sendEmployeeInvitationEmail(invitation, currentUser.name);
+
+    setUsers(prev => prev.map(u => u.id === targetUser.id ? { ...u, emailStatus: emailResult.status, invitationToken: token } : u));
+    setTeamInvitations(prev => [{ ...invitation, emailStatus: emailResult.status, emailError: emailResult.error }, ...prev.filter(i => i.email !== targetUser.email)]);
+
+    upsertTeamMemberToSupabase({ ...targetUser, emailStatus: emailResult.status, invitationToken: token });
+    upsertTeamInvitationToSupabase({ ...invitation, emailStatus: emailResult.status, emailError: emailResult.error });
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Resent invitation email to ${targetUser.email}`,
+      target: targetUser.role,
+      type: 'user',
+    });
+
+    if (emailResult.success) {
+      addNotification(`Invitation email successfully resent to ${targetUser.email}!`, 'success');
+    } else {
+      addNotification(`Resend attempted for ${targetUser.email}: ${emailResult.error}`, 'warning');
+    }
+
+    return { success: emailResult.success, emailStatus: emailResult.status, error: emailResult.error };
+  };
+
+  const acceptInvitation = async (token: string, password?: string): Promise<{ success: boolean; error?: string; user?: User }> => {
+    const matchedUser = users.find(u => u.invitationToken === token);
+    const matchedInvite = teamInvitations.find(i => i.token === token);
+
+    if (!matchedUser && !matchedInvite) {
+      return { success: false, error: 'Invalid or expired invitation token.' };
+    }
+
+    const userEmail = matchedUser?.email || matchedInvite?.email;
+    const target = users.find(u => u.email.toLowerCase() === userEmail?.toLowerCase());
+
+    if (!target) {
+      return { success: false, error: 'Invited employee record not found.' };
+    }
+
+    const activatedUser: User = {
+      ...target,
+      status: 'Active',
+      lastActive: 'Just now',
+    };
+
+    setUsers(prev => prev.map(u => u.id === target.id ? activatedUser : u));
+    setTeamInvitations(prev => prev.map(inv => inv.token === token ? { ...inv, status: 'Accepted' } : inv));
+
+    localStorage.setItem('verado_admin_auth', 'true');
+    setCurrentUserId(activatedUser.id);
+
+    upsertTeamMemberToSupabase(activatedUser);
+    if (matchedInvite) {
+      upsertTeamInvitationToSupabase({ ...matchedInvite, status: 'Accepted' });
+    }
+
+    addActivity({
+      user: activatedUser.name,
+      avatar: activatedUser.avatar,
+      action: `Accepted team invitation and entered Studio Dashboard as ${activatedUser.role}`,
+      target: activatedUser.role,
+      type: 'user',
+    });
+
+    addNotification(`Welcome, ${activatedUser.name}! Your account has been activated with ${activatedUser.role} access.`, 'success');
+    return { success: true, user: activatedUser };
+  };
+
+  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }): User | null => {
+    inviteEmployee(userData);
+    const found = users.find(u => u.email.toLowerCase() === userData.email.trim().toLowerCase());
+    return found || null;
   };
 
   const toggleUserStatus = (userId: string) => {
-    if (currentUser.role !== 'Owner') {
-      addNotification('Access Denied: Only the Studio Owner can change member status.', 'error');
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Access Denied: Only Studio Owner or Admin can change member status.', 'error');
       return;
     }
 
     const target = users.find(u => u.id === userId);
     if (!target) return;
     if (target.id === currentUser.id) {
-      addNotification('Cannot suspend your own active owner session.', 'error');
+      addNotification('Cannot deactivate your own active administrative account.', 'error');
       return;
     }
 
-    const newStatus = target.status === 'Active' ? 'Suspended' : 'Active';
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+    const newStatus = target.status === 'Active' ? 'Deactivated' : 'Active';
+    const updatedUser: User = { ...target, status: newStatus };
+
+    setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+    upsertTeamMemberToSupabase(updatedUser);
 
     if (newStatus === 'Active') {
-      addNotification(`Allowed ${target.name}! Green Active button enabled with full studio access.`, 'success');
+      addNotification(`Activated ${target.name}! Dashboard access and permissions enabled.`, 'success');
       addActivity({
         user: currentUser.name,
         avatar: currentUser.avatar,
-        action: `Allowed & activated team member "${target.name}"`,
+        action: `Activated employee account for "${target.name}" (${target.role})`,
         target: target.role,
         type: 'user',
       });
     } else {
-      addNotification(`Suspended ${target.name}. Studio dashboard access temporarily paused.`, 'info');
+      addNotification(`Deactivated ${target.name}. Studio dashboard access disabled.`, 'info');
       addActivity({
         user: currentUser.name,
         avatar: currentUser.avatar,
-        action: `Suspended team member "${target.name}"`,
+        action: `Deactivated employee account for "${target.name}"`,
         target: target.role,
         type: 'user',
       });
@@ -554,13 +868,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteUser = (userId: string) => {
-    if (currentUser.role !== 'Owner') {
-      addNotification('Access Denied: Only the Studio Owner can remove team members.', 'error');
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Access Denied: Only Studio Owner or Admin can remove team members.', 'error');
       return;
     }
 
     if (userId === currentUser.id) {
-      addNotification('Cannot remove your own active owner account.', 'error');
+      addNotification('Cannot remove your own active administrative account.', 'error');
       return;
     }
 
@@ -568,6 +882,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!targetUser) return;
 
     setUsers(prev => prev.filter(u => u.id !== userId));
+    setTeamInvitations(prev => prev.filter(inv => inv.email.toLowerCase() !== targetUser.email.toLowerCase()));
+
+    deleteTeamMemberFromSupabase(targetUser.id);
+    deleteTeamMemberFromSupabase(targetUser.email);
 
     addActivity({
       user: currentUser.name,
@@ -581,50 +899,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateUserPermissions = (userId: string, permissions: Partial<Permissions>, newRole?: UserRole) => {
-    if (currentUser.role !== 'Owner') {
-      addNotification('Access Denied: Only the Studio Owner can configure team permissions.', 'error');
+    if (!isAdministrativeUser(currentUser)) {
+      addNotification('Access Denied: Only Studio Owner or Admin can configure team permissions.', 'error');
       return;
     }
 
-    const effectiveRole = newRole || users.find(u => u.id === userId)?.role || 'Developer';
-    const isTargetOwner = effectiveRole === 'Owner';
-
-    setUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const updatedPermissions: Permissions = { 
-          ...u.permissions, 
-          ...permissions,
-          // Only Owner can ever have deleteProjects and manageTeam permissions
-          deleteProjects: isTargetOwner,
-          manageTeam: isTargetOwner,
-        };
-        
-        const updatedUser: User = {
-          ...u,
-          role: effectiveRole,
-          permissions: updatedPermissions,
-        };
-        return updatedUser;
-      }
-      return u;
-    }));
-
     const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return;
+
+    const effectiveRole = newRole || targetUser.role;
+    const isTargetAdmin = isAdministrativeRole(effectiveRole);
+
+    const updatedPermissions: Permissions = { 
+      ...targetUser.permissions, 
+      ...permissions,
+      deleteProjects: isTargetAdmin,
+      manageTeam: isTargetAdmin,
+    };
+    
+    const updatedUser: User = {
+      ...targetUser,
+      role: effectiveRole,
+      permissions: updatedPermissions,
+    };
+
+    setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+    upsertTeamMemberToSupabase(updatedUser);
+
     addActivity({
       user: currentUser.name,
       avatar: currentUser.avatar,
-      action: `Modified permissions for ${targetUser?.name || 'team member'}`,
+      action: `Modified permissions for ${targetUser.name} (${effectiveRole})`,
       target: effectiveRole,
       type: 'user',
     });
-    addNotification(`Permissions updated for ${targetUser?.name}`, 'success');
+    addNotification(`Permissions updated for ${targetUser.name}`, 'success');
   };
 
   const updateUserProfile = (userId: string, updates: { name?: string; email?: string; avatar?: string; role?: UserRole }) => {
-    const isOwner = currentUser.role === 'Owner';
+    const isOwnerOrAdmin = isAdministrativeUser(currentUser);
     const isSelf = currentUser.id === userId;
 
-    if (!isOwner && !isSelf) {
+    if (!isOwnerOrAdmin && !isSelf) {
       addNotification('Access Denied: You can only edit your own profile.', 'error');
       return;
     }
@@ -634,7 +950,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updatedName = updates.name !== undefined ? updates.name.trim() : u.name;
         const updatedEmail = updates.email !== undefined ? updates.email.trim() : u.email;
         const updatedAvatar = updates.avatar !== undefined ? updates.avatar : u.avatar;
-        const updatedRole = (isOwner && updates.role) ? updates.role : u.role;
+        const updatedRole = (isOwnerOrAdmin && updates.role) ? updates.role : u.role;
 
         const updated: User = {
           ...u,
@@ -644,13 +960,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           role: updatedRole,
         };
 
-        // If this is the owner, keep credentials and localStorage in sync
         if (u.role === 'Owner' || updatedRole === 'Owner') {
           if (updatedEmail) localStorage.setItem('verado_admin_email', updatedEmail);
           if (updatedName) localStorage.setItem('verado_owner_name', updatedName);
           if (updatedAvatar) localStorage.setItem('verado_owner_avatar', updatedAvatar);
         }
 
+        upsertTeamMemberToSupabase(updated);
         return updated;
       }
       return u;
@@ -673,7 +989,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'act-' + Math.random().toString(36).substring(2, 8),
       timestamp: 'Just now',
     };
-    setActivities(prev => [newItem, ...prev.slice(0, 15)]);
+    setActivities(prev => [newItem, ...prev.slice(0, 49)]);
+    insertActivityLogToSupabase(activity);
   };
 
   const updateFileContent = (path: string, content: string) => {
@@ -701,6 +1018,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addNotification(`Switched branch to ${branchName}`, 'info');
   };
 
+  const unreadInquiriesCount = inquiries.filter(i => !i.isRead).length;
+
+  const addInquiry = async (inquiryData: { name: string; email: string; subject?: string; category?: string; message: string }): Promise<boolean> => {
+    const newInquiry: ContactInquiry = {
+      id: 'inq-' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
+      name: inquiryData.name.trim(),
+      email: inquiryData.email.trim(),
+      subject: inquiryData.subject || inquiryData.category || 'General Inquiry',
+      category: inquiryData.category || inquiryData.subject,
+      message: inquiryData.message.trim(),
+      createdAt: new Date().toISOString(),
+      isRead: false,
+    };
+
+    setInquiries(prev => [newInquiry, ...prev]);
+    submitContactInquiry(newInquiry);
+
+    addActivity({
+      user: newInquiry.name,
+      avatar: getInitialsAvatar(newInquiry.name),
+      action: `Sent a new message: "${newInquiry.subject}"`,
+      target: 'Customer Inquiries',
+      type: 'user',
+    });
+
+    addNotification(`New customer inquiry received from ${newInquiry.name}!`, 'info');
+    return true;
+  };
+
+  const markInquiryAsRead = (id: string) => {
+    setInquiries(prev => prev.map(i => i.id === id ? { ...i, isRead: true } : i));
+    markInquiryAsReadInSupabase(id);
+  };
+
+  const deleteInquiry = (id: string) => {
+    const target = inquiries.find(i => i.id === id);
+    setInquiries(prev => prev.filter(i => i.id !== id));
+    deleteInquiryFromSupabase(id);
+    if (target) {
+      addNotification(`Message from ${target.name} deleted.`, 'info');
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -722,6 +1082,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         toggleUserStatus,
         updateUserPermissions,
         updateUserProfile,
+        teamInvitations,
+        inviteEmployee,
+        resendInvitation,
+        acceptInvitation,
+        isAdministrativeUser,
         activities,
         addActivity,
         codeFiles,
@@ -735,6 +1100,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notifications,
         addNotification,
         removeNotification,
+        inquiries,
+        unreadInquiriesCount,
+        addInquiry,
+        markInquiryAsRead,
+        deleteInquiry,
         isDarkTheme,
         toggleTheme,
         isSupabaseLive,

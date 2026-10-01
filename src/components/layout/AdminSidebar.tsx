@@ -7,12 +7,13 @@ import {
   Settings, 
   ExternalLink, 
   Smartphone,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export const AdminSidebar: React.FC = () => {
-  const { currentUser } = useApp();
+  const { currentUser, unreadInquiriesCount } = useApp();
 
   const navItems = [
     {
@@ -35,6 +36,14 @@ export const AdminSidebar: React.FC = () => {
       icon: Users,
       exact: false,
       allowed: true,
+    },
+    {
+      name: 'Messages',
+      path: '/admin/messages',
+      icon: MessageSquare,
+      exact: false,
+      allowed: true,
+      badge: unreadInquiriesCount > 0 ? unreadInquiriesCount : undefined,
     },
     {
       name: 'Settings',
@@ -95,7 +104,13 @@ export const AdminSidebar: React.FC = () => {
                   <Icon className="w-4 h-4 text-violet-400" />
                   <span>{item.name}</span>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+                {item.badge ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-600 text-white shadow-sm shadow-violet-600/50 animate-pulse">
+                    {item.badge}
+                  </span>
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+                )}
               </NavLink>
             );
           })}

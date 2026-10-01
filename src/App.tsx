@@ -21,7 +21,9 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminProjectsPage } from './pages/admin/AdminProjectsPage';
 import { AdminProjectEditPage } from './pages/admin/AdminProjectEditPage';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminMessagesPage } from './pages/admin/AdminMessagesPage';
 import { AdminSettingsPage } from './pages/admin/AdminSettingsPage';
+import { EmployeeSubmitProjectPage } from './pages/employee/EmployeeSubmitProjectPage';
 
 // Layout wrapper for Public Website
 const PublicLayout: React.FC = () => {
@@ -38,54 +40,25 @@ const PublicLayout: React.FC = () => {
   );
 };
 
-// Layout wrapper for Admin Dashboard
+// Layout wrapper for Admin Dashboard (Admin is always Admin)
 const AdminLayout: React.FC = () => {
-  const { currentUser, users, loginAsUser, addNotification } = useApp();
-  const ownerUser = users.find(u => u.role === 'Owner') || users[0];
-  const isOwner = currentUser.role === 'Owner';
   const location = useLocation();
   const navigate = useNavigate();
 
   React.useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const inviteId = searchParams.get('invite');
-    if (inviteId) {
-      const targetUser = users.find(u => u.id === inviteId);
-      if (targetUser) {
-        loginAsUser(targetUser.id);
-        addNotification(`Welcome, ${targetUser.name}! Email invitation accepted. You now have access to manage and add applications.`, 'success');
-        navigate('/admin', { replace: true });
-      }
+    const inviteToken = searchParams.get('invite');
+    if (inviteToken) {
+      // Employees clicking invite links are directed ONLY to the Project Add portal
+      navigate(`/submit-project?invite=${inviteToken}`, { replace: true });
     }
-  }, [location.search, users]);
+  }, [location.search, navigate]);
 
   return (
     <div className="min-h-screen flex bg-[#0F0E11] text-slate-100">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
         <AdminHeader />
-        {!isOwner && (
-          <div className="bg-gradient-to-r from-amber-500/20 via-violet-500/20 to-amber-500/20 border-b border-amber-500/30 px-4 sm:px-6 py-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs z-30">
-            <div className="flex items-center gap-2 text-amber-200">
-              <span className="text-base">👑</span>
-              <span>
-                Active Session: <strong className="text-white font-mono">{currentUser.name}</strong> ({currentUser.role}). Studio Owner actions are restricted in this view.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (ownerUser) {
-                  loginAsUser(ownerUser.id);
-                  addNotification(`Switched back to Studio Owner (${ownerUser.name})`, 'info');
-                }
-              }}
-              className="px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-black font-mono font-bold uppercase tracking-wider text-[11px] shrink-0 shadow-lg cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
-            >
-              <span>👑 Return to Studio Owner View</span>
-            </button>
-          </div>
-        )}
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
@@ -100,9 +73,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const searchParams = new URLSearchParams(location.search);
   const inviteId = searchParams.get('invite');
 
-  // If entering via direct email invite link, grant admin authentication
+  // If entering via direct email invite link, redirect to project add portal
   if (inviteId) {
-    localStorage.setItem('verado_admin_auth', 'true');
+    return <Navigate to={`/submit-project?invite=${inviteId}`} replace />;
   }
 
   const isAuth = localStorage.getItem('verado_admin_auth') === 'true';
@@ -127,10 +100,14 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
           </Route>
 
+          {/* Dedicated Employee Project Submission Portal (No Admin Sidebar, Direct Landing) */}
+          <Route path="/submit-project" element={<EmployeeSubmitProjectPage />} />
+          <Route path="/contribute" element={<EmployeeSubmitProjectPage />} />
+
           {/* Admin Auth */}
           <Route path="/admin/login" element={<AdminLoginPage />} />
 
-          {/* Admin Dashboard Protected Layout */}
+          {/* Admin Dashboard Protected Layout (Full Owner Access) */}
           <Route 
             path="/admin" 
             element={
@@ -144,6 +121,7 @@ function App() {
             <Route path="projects/new" element={<AdminProjectEditPage />} />
             <Route path="projects/:id/edit" element={<AdminProjectEditPage />} />
             <Route path="users" element={<AdminUsersPage />} />
+            <Route path="messages" element={<AdminMessagesPage />} />
             <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
 

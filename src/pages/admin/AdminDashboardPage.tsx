@@ -17,15 +17,16 @@ import {
   Clock,
   Archive,
   Bell,
-  Trash2,
+  MessageSquare,
   Mail,
-  UserCheck,
-  AlertTriangle
+  Send,
+  Trash2,
+  ChevronRight
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../../components/common/Modal';
-import { EmailInviteModal } from '../../components/common/EmailInviteModal';
-import { User } from '../../types';
+import { ContactInquiry } from '../../types';
+import { getInitialsAvatar } from '../../lib/avatar';
 
 export const AdminDashboardPage: React.FC = () => {
   const { 
@@ -33,28 +34,27 @@ export const AdminDashboardPage: React.FC = () => {
     users, 
     activities, 
     currentUser, 
-    deleteUser, 
-    toggleUserStatus, 
-    loginAsUser,
-    addNotification 
+    isAdministrativeUser,
+    inquiries,
+    unreadInquiriesCount,
+    markInquiryAsRead,
+    deleteInquiry
   } = useApp();
-  const isOwner = currentUser.role === 'Owner';
-  const [employeeToDelete, setEmployeeToDelete] = useState<User | null>(null);
-  const [dashboardInviteUser, setDashboardInviteUser] = useState<User | null>(null);
+  const isOwner = isAdministrativeUser(currentUser);
+  const [activeInquiryModal, setActiveInquiryModal] = useState<ContactInquiry | null>(null);
 
-  const handleAllowAndNotify = (user: User) => {
-    if (user.status !== 'Active') {
-      toggleUserStatus(user.id);
+  const handleOpenInquiry = (inquiry: ContactInquiry) => {
+    setActiveInquiryModal(inquiry);
+    if (!inquiry.isRead) {
+      markInquiryAsRead(inquiry.id);
     }
-    setDashboardInviteUser(user);
-    addNotification(`Authorization notification dispatched to ${user.email}!`, 'success');
   };
 
   const totalActive = projects.filter(p => !p.isArchived).length;
   const publishedProjects = projects.filter(p => p.published && !p.isArchived).length;
   const draftsCount = projects.filter(p => !p.published && !p.isArchived).length;
   const archivedCount = projects.filter(p => p.isArchived).length;
-  const totalDevelopers = users.filter(u => u.role === 'Developer' || u.role === 'Owner').length;
+  const totalDevelopers = users.filter(u => u.role === 'Developer' || u.role === 'Owner' || u.role === 'Admin').length;
 
   const stats = [
     { label: 'Active Projects', value: totalActive, icon: FolderKanban, color: 'text-sky-400', bg: 'bg-sky-500/10' },
@@ -72,11 +72,11 @@ export const AdminDashboardPage: React.FC = () => {
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold uppercase tracking-wider text-violet-400">
-              &#125; Active Session: {currentUser.role}
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-amber-400">
+              &#125; Studio Authority: Studio Owner
             </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30">
-              Live Mock
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-bold bg-amber-400/15 text-amber-300 border border-amber-400/30">
+              Full Administrative Control
             </span>
           </div>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
@@ -97,6 +97,37 @@ export const AdminDashboardPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {/* Unread Customer Inquiries Notification Banner - Stays until opened */}
+      {unreadInquiriesCount > 0 && (
+        <div className="p-5 rounded-[28px] bg-gradient-to-r from-violet-600/25 via-purple-600/15 to-transparent border border-violet-500/35 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-2xl bg-violet-600/30 text-violet-300 border border-violet-500/40 shrink-0">
+              <MessageSquare className="w-5 h-5 text-violet-400 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs uppercase font-bold text-violet-300 tracking-wider">
+                  New Customer Inquiry
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-violet-500/30 text-white shadow-sm shadow-violet-500/40">
+                  {unreadInquiriesCount} New
+                </span>
+              </div>
+              <p className="text-xs text-white/80 mt-0.5">
+                You have {unreadInquiriesCount} unread message{unreadInquiriesCount > 1 ? 's' : ''} submitted through your website contact page. This notification stays until opened and reviewed.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/admin/messages"
+            className="px-5 py-2.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase font-bold tracking-wider transition-colors shrink-0 shadow-lg shadow-violet-600/30 self-start sm:self-auto cursor-pointer flex items-center gap-2"
+          >
+            <span>Open Messages Inbox</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Owner Pending Review Callout Banner */}
       {isOwner && draftsCount > 0 && (
@@ -342,211 +373,168 @@ export const AdminDashboardPage: React.FC = () => {
 
       </div>
 
-      {/* Studio Team & Direct Access (Owner direct remove, green active button, invite email & member login) */}
+      {/* Customer Messages & Inquiries (Appears on dashboard, shows unread notification until opened) */}
       <div className="p-6 sm:p-8 rounded-[32px] bg-[#0F0E11] border border-white/10 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           <div>
             <div className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-wider text-violet-400 mb-1">
               <span>&#125;</span>
-              <Users className="w-4 h-4 text-violet-400" />
-              <span>Studio Team & Authorization Gateway</span>
+              <MessageSquare className="w-4 h-4 text-violet-400" />
+              <span>Customer Inquiries & Messages</span>
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
-              Studio Members & Access Control
+            <h3 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2.5">
+              <span>Recent Client Messages</span>
+              {unreadInquiriesCount > 0 && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-violet-600 text-white shadow-sm shadow-violet-600/50 animate-pulse">
+                  {unreadInquiriesCount} Unread
+                </span>
+              )}
             </h3>
             <p className="text-xs text-white/50">
-              {isOwner 
-                ? 'Owner authority: Remove employees directly from dashboard, toggle green active status, inspect invitations, and log in directly.' 
-                : 'Active collaborative team members in the studio.'}
+              Messages submitted on the contact page. Click to open and read. Notifications stay until you open them.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              to="/admin/users"
-              className="px-4 py-2 rounded-full bg-[#16151B] hover:bg-black border border-white/10 hover:border-violet-400/50 text-white font-mono text-xs uppercase tracking-wider transition-colors"
-            >
-              Full Permissions Matrix →
-            </Link>
-          </div>
+          <Link
+            to="/admin/messages"
+            className="px-4 py-2 rounded-full bg-[#16151B] hover:bg-black border border-white/10 hover:border-violet-400/50 text-white font-mono text-xs uppercase tracking-wider transition-colors self-start sm:self-auto"
+          >
+            All Messages ({inquiries.length}) →
+          </Link>
         </div>
 
-        {/* Members List */}
-        <div className="divide-y divide-white/5 overflow-x-auto">
-          {users.map((member) => {
-            const isCurrent = member.id === currentUser.id;
-            return (
-              <div key={member.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5 min-w-0">
+        {inquiries.length === 0 ? (
+          <div className="py-8 text-center text-white/40 text-xs font-mono">
+            No incoming customer messages yet. Messages from the contact page will appear here.
+          </div>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {inquiries.slice(0, 4).map((inquiry) => (
+              <div
+                key={inquiry.id}
+                onClick={() => handleOpenInquiry(inquiry)}
+                className={`py-3.5 px-3 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors cursor-pointer hover:bg-white/5 ${
+                  !inquiry.isRead ? 'bg-violet-500/[0.08]' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
                   <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/10 shrink-0"
+                    src={getInitialsAvatar(inquiry.name)}
+                    alt={inquiry.name}
+                    className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10 shrink-0"
                   />
                   <div className="min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-white truncate">{member.name}</span>
-                      {isCurrent && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-violet-500/20 text-violet-300 border border-violet-500/30">
-                          You
+                      <span className="font-bold text-xs text-white truncate">{inquiry.name}</span>
+                      {!inquiry.isRead && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-violet-500/20 text-violet-300 border border-violet-500/30 shrink-0 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                          <span>New</span>
                         </span>
                       )}
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-mono uppercase font-bold ${
-                        member.role === 'Owner'
-                          ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
-                          : member.role === 'Developer'
-                          ? 'bg-violet-500/15 text-violet-300 border border-violet-500/30'
-                          : member.role === 'Editor'
-                          ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                          : member.role === 'Content Manager'
-                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-violet-500/10 text-violet-200 border border-violet-500/30'
-                      }`}>
-                        {member.role}
-                      </span>
+                      <span className="text-[11px] font-mono text-white/40 truncate">&lt;{inquiry.email}&gt;</span>
                     </div>
-                    <div className="text-[11px] font-mono text-white/50 flex items-center gap-2">
-                      <span>{member.email}</span>
-                      {member.permissions?.customScope && (
-                        <>
-                          <span>•</span>
-                          <span className="text-violet-300/80 truncate max-w-[200px]" title={member.permissions.customScope}>
-                            ↳ {member.permissions.customScope}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    <p className="text-xs text-white/70 truncate">
+                      <strong className="text-white/90">{inquiry.subject || 'Inquiry'}:</strong> {inquiry.message}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto font-mono">
-                  {/* Status Indicator */}
-                  {member.status === 'Active' ? (
-                    <button
-                      type="button"
-                      onClick={() => isOwner && !isCurrent && toggleUserStatus(member.id)}
-                      disabled={!isOwner || isCurrent}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
-                        isOwner && !isCurrent ? 'cursor-pointer hover:opacity-90 active:scale-95' : 'cursor-default'
-                      } bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 shadow-emerald-500/10`}
-                      title={isOwner && !isCurrent ? 'Allowed & Active. Click to Suspend.' : 'Allowed & Active'}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
-                      <span>Active</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleAllowAndNotify(member)}
-                      disabled={!isOwner}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold transition-all shadow-sm ${
-                        isOwner ? 'cursor-pointer hover:bg-emerald-500/25 hover:text-emerald-300 hover:border-emerald-500/40 active:scale-95' : 'cursor-default'
-                      } bg-amber-500/15 text-amber-300 border border-amber-500/30`}
-                      title={isOwner ? 'Suspended. Click to Allow and dispatch email notification.' : 'Suspended'}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-amber-400" />
-                      <span>Allow Access</span>
-                    </button>
-                  )}
-
-                  {/* Actions for Current vs Non-Current */}
-                  {isCurrent ? (
-                    <span className="px-3.5 py-1.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>You (Active)</span>
-                    </span>
-                  ) : (
-                    <>
-                      {/* 1-Click Allow & Email Notification Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleAllowAndNotify(member)}
-                        className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 font-mono text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                        title={`Allow ${member.name} and send email notification to ${member.email}`}
-                      >
-                        <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Allow & Send Email</span>
-                      </button>
-
-                      {/* Log in as Member button */}
-                      <button
-                        type="button"
-                        onClick={() => loginAsUser(member.id)}
-                        className="px-3 py-1.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 text-[11px] font-mono uppercase font-semibold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
-                        title={`Log in to dashboard as ${member.name}`}
-                      >
-                        <UserCheck className="w-3.5 h-3.5 text-violet-400" />
-                        <span>Log in</span>
-                      </button>
-                    </>
-                  )}
-
-                  {/* Owner Remove Employee Button directly from Dashboard */}
-                  {isOwner && !isCurrent && (
-                    <button
-                      type="button"
-                      onClick={() => setEmployeeToDelete(member)}
-                      className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
-                      title={`Remove employee "${member.name}" directly from dashboard`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                  <span className="text-[11px] font-mono text-white/40">
+                    {new Date(inquiry.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                  </span>
+                  <span className="text-xs text-violet-400 font-mono hover:text-violet-300 flex items-center gap-1">
+                    <span>Read</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Remove Employee Confirmation Modal (Dashboard) */}
-      {employeeToDelete && (
+      {/* Message Reader Modal on Dashboard */}
+      {activeInquiryModal && (
         <Modal
-          isOpen={Boolean(employeeToDelete)}
-          onClose={() => setEmployeeToDelete(null)}
-          title="Remove Team Member"
+          isOpen={Boolean(activeInquiryModal)}
+          onClose={() => setActiveInquiryModal(null)}
+          title={activeInquiryModal.subject || 'Customer Message'}
+          subtitle={`From ${activeInquiryModal.name} • ${new Date(activeInquiryModal.createdAt).toLocaleString()}`}
+          maxWidth="max-w-xl"
         >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
-              <p>
-                Are you sure you want to remove <strong className="text-white">{employeeToDelete.name}</strong> ({employeeToDelete.email}) from the studio team?
-              </p>
+          <div className="space-y-5 pt-2">
+            
+            {/* Sender Info Card */}
+            <div className="p-4 rounded-2xl bg-[#16151B] border border-white/10 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <img
+                  src={getInitialsAvatar(activeInquiryModal.name)}
+                  alt={activeInquiryModal.name}
+                  className="w-12 h-12 rounded-xl object-cover ring-2 ring-violet-500/40 shrink-0"
+                />
+                <div>
+                  <span className="text-sm font-bold text-white block">{activeInquiryModal.name}</span>
+                  <a 
+                    href={`mailto:${activeInquiryModal.email}`}
+                    className="text-xs text-violet-400 hover:text-violet-300 font-mono transition-colors"
+                  >
+                    {activeInquiryModal.email}
+                  </a>
+                </div>
+              </div>
+
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                {activeInquiryModal.category || 'Direct Message'}
+              </span>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => setEmployeeToDelete(null)}
-                className="px-4 py-2 rounded-full bg-[#16151B] hover:bg-black border border-white/10 text-white/80 hover:text-white text-xs font-mono uppercase tracking-wider cursor-pointer"
-              >
-                Cancel
-              </button>
+            {/* Message Body */}
+            <div className="space-y-2">
+              <label className="block font-mono text-[10px] font-bold uppercase tracking-wider text-white/50">
+                Message Text
+              </label>
+              <div className="p-4 rounded-2xl bg-[#0F0E11] border border-white/10 text-xs sm:text-sm text-white/90 leading-relaxed whitespace-pre-wrap">
+                {activeInquiryModal.message}
+              </div>
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-white/10">
               <button
                 type="button"
                 onClick={() => {
-                  deleteUser(employeeToDelete.id);
-                  setEmployeeToDelete(null);
+                  deleteInquiry(activeInquiryModal.id);
+                  setActiveInquiryModal(null);
                 }}
-                className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-white text-xs font-mono uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer"
+                className="px-4 py-2 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                Confirm Remove
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveInquiryModal(null)}
+                  className="px-5 py-2.5 rounded-full bg-[#16151B] hover:bg-black border border-white/10 text-white/80 hover:text-white text-xs font-mono uppercase tracking-wider cursor-pointer"
+                >
+                  Close
+                </button>
+                <a
+                  href={`mailto:${activeInquiryModal.email}?subject=Re: ${encodeURIComponent(activeInquiryModal.subject || 'Your Inquiry to Verado')}`}
+                  className="px-6 py-2.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Reply via Email</span>
+                </a>
+              </div>
             </div>
+
           </div>
         </Modal>
       )}
-
-      {/* Email Invite Modal (Dashboard) */}
-      <EmailInviteModal
-        isOpen={Boolean(dashboardInviteUser)}
-        onClose={() => setDashboardInviteUser(null)}
-        user={dashboardInviteUser}
-        onAcceptAndLaunch={(user) => {
-          loginAsUser(user.id);
-          setDashboardInviteUser(null);
-        }}
-      />
 
     </div>
   );

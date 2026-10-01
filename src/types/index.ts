@@ -43,22 +43,27 @@ export interface Project {
   submittedBy?: string;
 }
 
-export type PredefinedUserRole = 'Owner' | 'Developer' | 'Editor' | 'Content Manager';
+export type PredefinedUserRole = 'Owner' | 'Admin' | 'Developer' | 'Editor' | 'Content Manager';
 export type UserRole = PredefinedUserRole | (string & {});
 
 export interface Permissions {
   viewProjects: boolean;
-  addProjects: boolean;
-  editProjects: boolean;
-  deleteProjects?: boolean;
+  addProjects: boolean;       // Create new applications in catalog
+  editProjects: boolean;      // Edit application specs, metadata, and URLs
+  uploadMedia?: boolean;      // Upload and replace icons, covers, screenshots, videos
+  publishProjects?: boolean;  // Publish projects live to showcase without owner review
+  deployProduction: boolean;  // Full release and production pipeline
+  deleteProjects?: boolean;   // Strictly Owner only
+  manageTeam?: boolean;       // Strictly Owner only
   codeEditor?: boolean;
-  createBranch: boolean;
-  previewChanges: boolean;
-  mergeToProduction: boolean;
-  deployProduction: boolean;
-  manageTeam?: boolean;
+  createBranch?: boolean;
+  previewChanges?: boolean;
+  mergeToProduction?: boolean;
   customScope?: string;
 }
+
+export type AccountStatus = 'Active' | 'Deactivated' | 'Pending Invitation' | 'Suspended';
+export type InvitationEmailStatus = 'Pending' | 'Sent' | 'Failed';
 
 export interface User {
   id: string;
@@ -66,10 +71,29 @@ export interface User {
   email: string;
   avatar: string;
   role: UserRole;
-  status: 'Active' | 'Invited' | 'Suspended';
+  status: AccountStatus;
   codeAccess?: 'Full Access' | 'Read Only' | 'Locked';
   permissions: Permissions;
   lastActive: string;
+  emailStatus?: InvitationEmailStatus;
+  invitationToken?: string;
+  invitedAt?: string;
+  invitedBy?: string;
+}
+
+export interface TeamInvitation {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  permissions: Permissions;
+  token: string;
+  status: 'Pending' | 'Accepted' | 'Revoked' | 'Expired';
+  emailStatus: InvitationEmailStatus;
+  emailError?: string;
+  createdAt: string;
+  expiresAt: string;
+  invitedBy: string;
 }
 
 export interface ActivityItem {
@@ -88,3 +112,15 @@ export interface CodeFile {
   language: string;
   content: string;
 }
+
+export interface ContactInquiry {
+  id: string;
+  name: string;
+  email: string;
+  subject?: string;
+  category?: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+}
+

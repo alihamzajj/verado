@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Project } from '../types';
+import { Project, User, TeamInvitation, ActivityItem, ContactInquiry } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
@@ -169,20 +169,82 @@ export const uploadMediaToSupabase = async (file: File, bucket = 'project-assets
 
 // Save Contact / Support Inquiries
 export const submitContactInquiry = async (inquiry: {
+  id?: string;
   name: string;
   email: string;
   subject?: string;
   category?: string;
   message: string;
+  created_at?: string;
+  is_read?: boolean;
 }): Promise<boolean> => {
   if (!isSupabaseConfigured()) return true; // Fallback mock success
   try {
-    const { error } = await supabase.from('inquiries').insert([inquiry]);
+    const { error } = await supabase.from('inquiries').insert([{
+      name: inquiry.name,
+      email: inquiry.email,
+      subject: inquiry.subject,
+      category: inquiry.category || inquiry.subject,
+      message: inquiry.message,
+    }]);
     return !error;
   } catch {
     return true;
   }
 };
+
+export const fetchInquiriesFromSupabase = async (): Promise<ContactInquiry[] | null> => {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const { data, error } = await supabase
+      .from('inquiries')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return null;
+
+    return data.map((item: any) => ({
+      id: String(item.id),
+      name: item.name || 'Anonymous',
+      email: item.email || '',
+      subject: item.subject || item.category || 'General Inquiry',
+      category: item.category || item.subject,
+      message: item.message || '',
+      createdAt: item.created_at || new Date().toISOString(),
+      isRead: Boolean(item.is_read),
+    }));
+  } catch (err) {
+    console.warn('Error fetching inquiries from Supabase:', err);
+    return null;
+  }
+};
+
+export const markInquiryAsReadInSupabase = async (id: string): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return true;
+  try {
+    const { error } = await supabase
+      .from('inquiries')
+      .update({ is_read: true })
+      .eq('id', id);
+    return !error;
+  } catch {
+    return true;
+  }
+};
+
+export const deleteInquiryFromSupabase = async (id: string): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return true;
+  try {
+    const { error } = await supabase
+      .from('inquiries')
+      .delete()
+      .eq('id', id);
+    return !error;
+  } catch {
+    return true;
+  }
+};
+
 
 // Studio & Owner Self-Service Credentials Settings
 export interface StudioSettings {
@@ -237,4 +299,207 @@ export const updateStudioSettings = async (settings: Partial<StudioSettings>): P
     return false;
   }
 };
+
+// ==============================================================================
+// TEAM MEMBERS SUPABASE OPERATIONS
+// ==============================================================================
+
+export const fetchTeamMembersFromSupabase = async (): Promise<User[] | null> => {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return null;
+
+    return data.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      email: item.email,
+      avatar: item.avatar || '',
+      role: item.role,
+      status: item.status,
+      codeAccess: item.code_access || 'Read Only',
+      permissions: item.permissions || {
+        viewProjects: true,
+        addProjects: false,
+        editProjects: false,
+        uploadMedia: false,
+        publishProjects: false,
+        deployProduction: false,
+      },
+      lastActive: item.last_active || 'Recently',
+      emailStatus: item.email_status || 'Pending',
+      invitationToken: item.invitation_token,
+      invitedAt: item.invited_at,
+      invitedBy: item.invited_by,
+    }));
+  } catch (err) {
+    console.warn('Error fetching team members from Supabase:', err);
+    return null;
+  }
+};
+
+export const upsertTeamMemberToSupabase = async (user: User): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      status: user.status,
+      code_access: user.codeAccess,
+      permissions: user.permissions,
+      last_active: user.lastActive,
+      email_status: user.emailStatus || 'Pending',
+      invitation_token: user.invitationToken,
+      invited_at: user.invitedAt,
+      invited_by: user.invitedBy,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('team_members')
+      .upsert(payload, { onConflict: 'email' });
+
+    if (error) {
+      console.warn('Failed to upsert team member in Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('Upsert team member exception:', err);
+    return false;
+  }
+};
+
+export const deleteTeamMemberFromSupabase = async (userIdOrEmail: string): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase
+      .from('team_members')
+      .delete()
+      .or(`id.eq.${userIdOrEmail},email.eq.${userIdOrEmail}`);
+
+    return !error;
+  } catch {
+    return false;
+  }
+};
+
+// ==============================================================================
+// TEAM INVITATIONS SUPABASE OPERATIONS
+// ==============================================================================
+
+export const fetchTeamInvitationsFromSupabase = async (): Promise<TeamInvitation[] | null> => {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const { data, error } = await supabase
+      .from('team_invitations')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return null;
+
+    return data.map((item: any) => ({
+      id: item.id,
+      email: item.email,
+      name: item.name,
+      role: item.role,
+      permissions: item.permissions,
+      token: item.token,
+      status: item.status,
+      emailStatus: item.email_status,
+      emailError: item.email_error,
+      invitedBy: item.invited_by,
+      createdAt: item.created_at,
+      expiresAt: item.expires_at,
+    }));
+  } catch (err) {
+    console.warn('Error fetching invitations from Supabase:', err);
+    return null;
+  }
+};
+
+export const upsertTeamInvitationToSupabase = async (invitation: TeamInvitation): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const payload = {
+      id: invitation.id,
+      email: invitation.email,
+      name: invitation.name,
+      role: invitation.role,
+      permissions: invitation.permissions,
+      token: invitation.token,
+      status: invitation.status,
+      email_status: invitation.emailStatus,
+      email_error: invitation.emailError,
+      invited_by: invitation.invitedBy,
+      expires_at: invitation.expiresAt,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase
+      .from('team_invitations')
+      .upsert(payload, { onConflict: 'token' });
+
+    return !error;
+  } catch {
+    return false;
+  }
+};
+
+// ==============================================================================
+// ACTIVITY LOGS SUPABASE OPERATIONS
+// ==============================================================================
+
+export const fetchActivityLogsFromSupabase = async (): Promise<ActivityItem[] | null> => {
+  if (!isSupabaseConfigured()) return null;
+  try {
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error || !data) return null;
+
+    return data.map((item: any) => ({
+      id: String(item.id),
+      user: item.user_name,
+      avatar: item.avatar || '',
+      action: item.action,
+      target: item.target || '',
+      timestamp: item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+      type: item.type || 'project',
+    }));
+  } catch (err) {
+    console.warn('Error fetching activity logs from Supabase:', err);
+    return null;
+  }
+};
+
+export const insertActivityLogToSupabase = async (activity: Omit<ActivityItem, 'id' | 'timestamp'>): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+  try {
+    const { error } = await supabase
+      .from('activity_logs')
+      .insert([{
+        user_name: activity.user,
+        avatar: activity.avatar,
+        action: activity.action,
+        target: activity.target,
+        type: activity.type,
+      }]);
+
+    return !error;
+  } catch {
+    return false;
+  }
+};
+
 
