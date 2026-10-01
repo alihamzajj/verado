@@ -335,6 +335,8 @@ export const fetchTeamMembersFromSupabase = async (): Promise<User[] | null> => 
       invitationToken: item.invitation_token,
       invitedAt: item.invited_at,
       invitedBy: item.invited_by,
+      accessPasscode: item.access_passcode || item.permissions?.accessPasscode,
+      passcodeGeneratedAt: item.passcode_generated_at || item.permissions?.passcodeGeneratedAt,
     }));
   } catch (err) {
     console.warn('Error fetching team members from Supabase:', err);
@@ -353,7 +355,11 @@ export const upsertTeamMemberToSupabase = async (user: User): Promise<boolean> =
       role: user.role,
       status: user.status,
       code_access: user.codeAccess,
-      permissions: user.permissions,
+      permissions: {
+        ...user.permissions,
+        accessPasscode: user.accessPasscode,
+        passcodeGeneratedAt: user.passcodeGeneratedAt,
+      },
       last_active: user.lastActive,
       email_status: user.emailStatus || 'Pending',
       invitation_token: user.invitationToken,

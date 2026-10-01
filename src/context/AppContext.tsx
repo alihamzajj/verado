@@ -64,6 +64,11 @@ interface AppContextType {
   acceptInvitation: (token: string, password?: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   isAdministrativeUser: (user?: User | null) => boolean;
 
+  generateUserPasscode: (userId: string) => string;
+  revokeUserPasscode: (userId: string) => void;
+  loginWithPasscode: (passcode: string, email?: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  verifyProjectEditPasscode: (passcode: string) => boolean;
+
   activities: ActivityItem[];
   addActivity: (activity: Omit<ActivityItem, 'id' | 'timestamp'>) => void;
   
@@ -827,6 +832,112 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, user: activatedUser };
   };
 
+  const generateUserPasscode = (userId: string): string => {
+    const randomDigits = Math.floor(100000 + Math.random() * 900000);
+    const newPasscode = `VRD-${randomDigits}`;
+
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return '';
+
+    const updatedUser: User = {
+      ...targetUser,
+      accessPasscode: newPasscode,
+      passcodeGeneratedAt: new Date().toISOString(),
+    };
+
+    setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+    upsertTeamMemberToSupabase(updatedUser);
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Generated new access password for ${targetUser.name}`,
+      target: targetUser.role,
+      type: 'user',
+    });
+
+    addNotification(`New access password generated for ${targetUser.name}: ${newPasscode}`, 'success');
+    return newPasscode;
+  };
+
+  const revokeUserPasscode = (userId: string) => {
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return;
+
+    const updatedUser: User = {
+      ...targetUser,
+      accessPasscode: undefined,
+      passcodeGeneratedAt: undefined,
+    };
+
+    setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+    upsertTeamMemberToSupabase(updatedUser);
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Revoked access password for ${targetUser.name}`,
+      target: targetUser.role,
+      type: 'user',
+    });
+
+    addNotification(`Access password for ${targetUser.name} has been revoked.`, 'info');
+  };
+
+  const loginWithPasscode = async (passcode: string, email?: string): Promise<{ success: boolean; user?: User; error?: string }> => {
+    const cleanPass = passcode.trim().toUpperCase();
+    if (!cleanPass) {
+      return { success: false, error: 'Please enter an access password.' };
+    }
+
+    let matched = users.find(u => u.accessPasscode && u.accessPasscode.toUpperCase() === cleanPass);
+    if (!matched && email) {
+      const byEmail = users.find(u => u.email.toLowerCase() === email.trim().toLowerCase());
+      if (byEmail?.accessPasscode && byEmail.accessPasscode.toUpperCase() === cleanPass) {
+        matched = byEmail;
+      }
+    }
+
+    if (!matched) {
+      return { success: false, error: 'Invalid or expired access password. Ask the Studio Owner for a new password.' };
+    }
+
+    if (matched.status === 'Deactivated' || matched.status === 'Suspended') {
+      return { success: false, error: 'This employee account is deactivated. Contact the Studio Owner.' };
+    }
+
+    const activeMember: User = { ...matched, status: 'Active', lastActive: 'Just now' };
+    setUsers(prev => prev.map(u => u.id === matched!.id ? activeMember : u));
+    upsertTeamMemberToSupabase(activeMember);
+
+    localStorage.setItem('verado_admin_auth', 'true');
+    localStorage.setItem('apex_current_user_id', activeMember.id);
+    setCurrentUserId(activeMember.id);
+
+    addActivity({
+      user: activeMember.name,
+      avatar: activeMember.avatar,
+      action: `Signed in with Admin-generated access password`,
+      target: activeMember.role,
+      type: 'user',
+    });
+
+    addNotification(`Access granted! Signed in as ${activeMember.name} (${activeMember.role}).`, 'success');
+    return { success: true, user: activeMember };
+  };
+
+  const verifyProjectEditPasscode = (passcode: string): boolean => {
+    const cleanPass = passcode.trim().toUpperCase();
+    if (!cleanPass) return false;
+
+    const matched = users.find(u => u.accessPasscode && u.accessPasscode.toUpperCase() === cleanPass);
+    if (matched) {
+      addNotification(`Access verified for ${matched.name}! Project edit authorized.`, 'success');
+      return true;
+    }
+    return false;
+  };
+
   const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked'; permissions?: Partial<Permissions> }): User | null => {
     inviteEmployee(userData);
     const found = users.find(u => u.email.toLowerCase() === userData.email.trim().toLowerCase());
@@ -1093,6 +1204,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resendInvitation,
         acceptInvitation,
         isAdministrativeUser,
+        generateUserPasscode,
+        revokeUserPasscode,
+        loginWithPasscode,
+        verifyProjectEditPasscode,
         activities,
         addActivity,
         codeFiles,

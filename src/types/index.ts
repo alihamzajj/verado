@@ -79,6 +79,8 @@ export interface User {
   invitationToken?: string;
   invitedAt?: string;
   invitedBy?: string;
+  accessPasscode?: string;
+  passcodeGeneratedAt?: string;
 }
 
 export interface TeamInvitation {
