@@ -15,7 +15,8 @@ import {
   Trash2,
   Mail,
   User as UserIcon,
-  Palette
+  Palette,
+  Camera
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { User, Permissions, UserRole } from '../../types';
@@ -28,6 +29,7 @@ export const AdminUsersPage: React.FC = () => {
     currentUser, 
     setCurrentUser, 
     updateUserPermissions, 
+    updateUserProfile,
     addUser, 
     deleteUser, 
     addNotification 
@@ -55,8 +57,14 @@ export const AdminUsersPage: React.FC = () => {
   const [customPhotoUrl, setCustomPhotoUrl] = useState<string>('');
   const [showCustomPhotoInput, setShowCustomPhotoInput] = useState<boolean>(false);
 
-  // Modal local state for editing permissions
+  // Modal local state for editing permissions & profile
   const [modalRole, setModalRole] = useState<UserRole>('Developer');
+  const [editName, setEditName] = useState<string>('');
+  const [editEmail, setEditEmail] = useState<string>('');
+  const [editAvatar, setEditAvatar] = useState<string>('');
+  const [editGradient, setEditGradient] = useState<string>('amethyst');
+  const [showEditPhotoInput, setShowEditPhotoInput] = useState<boolean>(false);
+
   const [modalPermissions, setModalPermissions] = useState<Permissions>({
     viewProjects: true,
     addProjects: true,
@@ -75,6 +83,11 @@ export const AdminUsersPage: React.FC = () => {
     setSelectedUser(user);
     setModalRole(user.role);
     setModalPermissions({ ...user.permissions });
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditAvatar(user.avatar && !user.avatar.startsWith('data:image/svg') ? user.avatar : '');
+    setEditGradient('amethyst');
+    setShowEditPhotoInput(Boolean(user.avatar && !user.avatar.startsWith('data:image/svg')));
   };
 
   const handleSavePermissions = () => {
@@ -83,7 +96,14 @@ export const AdminUsersPage: React.FC = () => {
       return;
     }
     if (selectedUser) {
+      const finalAvatar = editAvatar.trim() || getInitialsAvatar(editName, editGradient);
       updateUserPermissions(selectedUser.id, modalPermissions, modalRole);
+      updateUserProfile(selectedUser.id, {
+        name: editName.trim() || selectedUser.name,
+        email: editEmail.trim() || selectedUser.email,
+        avatar: finalAvatar,
+        role: modalRole,
+      });
       setSelectedUser(null);
     }
   };
@@ -146,7 +166,7 @@ export const AdminUsersPage: React.FC = () => {
             Team Members & Permissions
           </h1>
           <p className="text-xs sm:text-sm text-white/60 mt-1">
-            Granular role-based access control. Configure project catalog editing, release access, and team roster.
+            Granular role-based access control. Configure names, emails, avatars, roles, and release authorizations.
           </p>
         </div>
 
@@ -296,7 +316,7 @@ export const AdminUsersPage: React.FC = () => {
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2 font-mono">
                         
-                        {/* Permissions & Role configuration */}
+                        {/* Permissions & Profile configuration */}
                         <button
                           onClick={() => handleOpenPermissions(user)}
                           disabled={!isOwner}
@@ -305,10 +325,10 @@ export const AdminUsersPage: React.FC = () => {
                               ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
                               : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
                           }`}
-                          title={isOwner ? 'Configure Role & Permissions' : 'Only Studio Owner can configure permissions'}
+                          title={isOwner ? 'Edit Profile & Permissions' : 'Only Studio Owner can configure permissions'}
                         >
                           <Sliders className="w-3 h-3 text-violet-400" />
-                          <span>Role & Access</span>
+                          <span>Edit & Access</span>
                         </button>
 
                         {/* Persona switcher */}
@@ -587,20 +607,121 @@ export const AdminUsersPage: React.FC = () => {
         </Modal>
       )}
 
-      {/* Permission Drawer / Modal */}
+      {/* Edit Profile & Permissions Drawer / Modal */}
       {selectedUser && (
         <Modal
           isOpen={!!selectedUser}
           onClose={() => setSelectedUser(null)}
-          title={`Configure Permissions: ${selectedUser.name}`}
+          title={`Edit Profile & Access: ${selectedUser.name}`}
           subtitle={`${selectedUser.email} • ID: ${selectedUser.id}`}
           maxWidth="max-w-xl"
         >
-          <div className="space-y-6 pt-2">
+          <div className="space-y-5 pt-2">
             
+            {/* Live Monogram Badge / Picture Preview */}
+            <div className="p-4 rounded-2xl bg-[#16151B] border border-white/10 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <img 
+                  src={editAvatar.trim() || getInitialsAvatar(editName || selectedUser.name, editGradient)} 
+                  alt={editName} 
+                  className="w-12 h-12 rounded-xl object-cover ring-2 ring-violet-500/40 shrink-0" 
+                />
+                <div>
+                  <span className="text-xs font-bold text-white block">{editName || selectedUser.name}</span>
+                  <span className="text-[11px] text-white/50 font-mono">{editEmail || selectedUser.email}</span>
+                </div>
+              </div>
+
+              {/* Theme Picker */}
+              <div className="flex items-center gap-2">
+                {AVATAR_GRADIENTS.map((grad) => (
+                  <button
+                    key={grad.id}
+                    type="button"
+                    onClick={() => {
+                      setEditGradient(grad.id);
+                      setEditAvatar('');
+                    }}
+                    style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}
+                    className={`w-6 h-6 rounded-lg transition-all cursor-pointer ${
+                      editGradient === grad.id && !editAvatar
+                        ? 'ring-2 ring-white scale-110 shadow-md'
+                        : 'opacity-70 hover:opacity-100'
+                    }`}
+                    title={grad.name}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Photo URL toggle */}
+            <div>
+              {!showEditPhotoInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowEditPhotoInput(true)}
+                  className="text-[11px] font-mono text-violet-400 hover:text-violet-300 transition-colors cursor-pointer"
+                >
+                  + Edit custom photo link
+                </button>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="font-mono text-[10px] uppercase text-white/50">Custom Photo Link</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditAvatar('');
+                        setShowEditPhotoInput(false);
+                      }}
+                      className="text-[10px] text-white/40 hover:text-white"
+                    >
+                      Use Monogram Badge
+                    </button>
+                  </div>
+                  <input
+                    type="url"
+                    value={editAvatar}
+                    onChange={(e) => setEditAvatar(e.target.value)}
+                    placeholder="https://example.com/photo.jpg"
+                    className="w-full px-3 py-2 rounded-xl bg-[#16151B] border border-white/10 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-violet-400"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Name & Email Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-violet-400 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-violet-400 transition-colors"
+                />
+              </div>
+            </div>
+
             {/* Role Dropdown */}
             <div>
-              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-2">
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
                 Assigned Role
               </label>
               <select
@@ -670,7 +791,7 @@ export const AdminUsersPage: React.FC = () => {
               </div>
 
               {/* Permanent Owner-Only Delete Guard Notice */}
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3 mt-4">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3 mt-3">
                 <Lock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
@@ -702,7 +823,7 @@ export const AdminUsersPage: React.FC = () => {
                 onClick={handleSavePermissions}
                 className="px-6 py-2.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer"
               >
-                Save Permissions
+                Save Changes
               </button>
             </div>
 

@@ -28,6 +28,7 @@ interface AppContextType {
   addUser: (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked' }) => void;
   deleteUser: (userId: string) => void;
   updateUserPermissions: (userId: string, permissions: Partial<Permissions>, role?: UserRole) => void;
+  updateUserProfile: (userId: string, updates: { name?: string; email?: string; avatar?: string; role?: UserRole }) => void;
   
   activities: ActivityItem[];
   addActivity: (activity: Omit<ActivityItem, 'id' | 'timestamp'>) => void;
@@ -67,7 +68,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [users, setUsers] = useState<User[]>(() => {
     try {
       const saved = localStorage.getItem('apex_users');
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
+      let parsed = saved ? JSON.parse(saved) : INITIAL_USERS;
+
+      const storedEmail = localStorage.getItem('verado_admin_email');
+      const storedName = localStorage.getItem('verado_owner_name');
+      const storedAvatar = localStorage.getItem('verado_owner_avatar');
+
+      if (storedEmail || storedName || storedAvatar) {
+        parsed = parsed.map((u: User) => {
+          if (u.role === 'Owner') {
+            return {
+              ...u,
+              email: storedEmail || u.email,
+              name: storedName || u.name,
+              avatar: storedAvatar || u.avatar,
+            };
+          }
+          return u;
+        });
+      }
+      return parsed;
     } catch {
       return INITIAL_USERS;
     }
@@ -531,6 +551,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addNotification(`Permissions updated for ${targetUser?.name}`, 'success');
   };
 
+  const updateUserProfile = (userId: string, updates: { name?: string; email?: string; avatar?: string; role?: UserRole }) => {
+    const isOwner = currentUser.role === 'Owner';
+    const isSelf = currentUser.id === userId;
+
+    if (!isOwner && !isSelf) {
+      addNotification('Access Denied: You can only edit your own profile.', 'error');
+      return;
+    }
+
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const updatedName = updates.name !== undefined ? updates.name.trim() : u.name;
+        const updatedEmail = updates.email !== undefined ? updates.email.trim() : u.email;
+        const updatedAvatar = updates.avatar !== undefined ? updates.avatar : u.avatar;
+        const updatedRole = (isOwner && updates.role) ? updates.role : u.role;
+
+        const updated: User = {
+          ...u,
+          name: updatedName || u.name,
+          email: updatedEmail || u.email,
+          avatar: updatedAvatar || u.avatar,
+          role: updatedRole,
+        };
+
+        // If this is the owner, keep credentials and localStorage in sync
+        if (u.role === 'Owner' || updatedRole === 'Owner') {
+          if (updatedEmail) localStorage.setItem('verado_admin_email', updatedEmail);
+          if (updatedName) localStorage.setItem('verado_owner_name', updatedName);
+          if (updatedAvatar) localStorage.setItem('verado_owner_avatar', updatedAvatar);
+        }
+
+        return updated;
+      }
+      return u;
+    }));
+
+    addActivity({
+      user: updates.name || currentUser.name,
+      avatar: updates.avatar || currentUser.avatar,
+      action: `Updated profile details`,
+      target: updates.email || 'Profile Settings',
+      type: 'user',
+    });
+
+    addNotification('Profile updated successfully!', 'success');
+  };
+
   const addActivity = (activity: Omit<ActivityItem, 'id' | 'timestamp'>) => {
     const newItem: ActivityItem = {
       ...activity,
@@ -584,6 +651,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addUser,
         deleteUser,
         updateUserPermissions,
+        updateUserProfile,
         activities,
         addActivity,
         codeFiles,
