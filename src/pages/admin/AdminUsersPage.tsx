@@ -14,11 +14,13 @@ import {
   UserPlus,
   Trash2,
   Mail,
-  User as UserIcon
+  User as UserIcon,
+  Palette
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { User, Permissions, UserRole } from '../../types';
 import { Modal } from '../../components/common/Modal';
+import { getInitialsAvatar, AVATAR_GRADIENTS } from '../../lib/avatar';
 
 export const AdminUsersPage: React.FC = () => {
   const { 
@@ -48,6 +50,10 @@ export const AdminUsersPage: React.FC = () => {
     role: 'Developer',
     codeAccess: 'Full Access',
   });
+
+  const [selectedGradient, setSelectedGradient] = useState<string>('amethyst');
+  const [customPhotoUrl, setCustomPhotoUrl] = useState<string>('');
+  const [showCustomPhotoInput, setShowCustomPhotoInput] = useState<boolean>(false);
 
   // Modal local state for editing permissions
   const [modalRole, setModalRole] = useState<UserRole>('Developer');
@@ -92,18 +98,26 @@ export const AdminUsersPage: React.FC = () => {
       addNotification('Please enter both name and email.', 'error');
       return;
     }
+
+    const finalAvatar = customPhotoUrl.trim() || getInitialsAvatar(newMember.name, selectedGradient);
+
     addUser({
       name: newMember.name,
       email: newMember.email,
       role: newMember.role,
       codeAccess: newMember.codeAccess,
+      avatar: finalAvatar,
     });
+
     setNewMember({
       name: '',
       email: '',
       role: 'Developer',
       codeAccess: 'Full Access',
     });
+    setCustomPhotoUrl('');
+    setShowCustomPhotoInput(false);
+    setSelectedGradient('amethyst');
     setIsAddModalOpen(false);
   };
 
@@ -140,7 +154,14 @@ export const AdminUsersPage: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* Current Active Persona Reminder */}
           <div className="p-3.5 rounded-2xl bg-[#0F0E11] border border-white/10 flex items-center gap-3">
-            <img src={currentUser.avatar} alt={currentUser.name} className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10" />
+            <img 
+              src={currentUser.avatar} 
+              alt={currentUser.name} 
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = getInitialsAvatar(currentUser.name);
+              }}
+              className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10" 
+            />
             <div className="text-xs">
               <span className="text-white/40 block font-mono text-[10px] uppercase">Logged in persona:</span>
               <span className="font-bold text-white">{currentUser.name} <span className="text-violet-400 font-mono font-normal">({currentUser.role})</span></span>
@@ -209,6 +230,9 @@ export const AdminUsersPage: React.FC = () => {
                         <img 
                           src={user.avatar} 
                           alt={user.name} 
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = getInitialsAvatar(user.name);
+                          }}
                           className="w-10 h-10 rounded-xl object-cover ring-1 ring-white/10 shrink-0" 
                         />
                         <div>
@@ -342,6 +366,89 @@ export const AdminUsersPage: React.FC = () => {
           maxWidth="max-w-md"
         >
           <form onSubmit={handleAddMemberSubmit} className="space-y-4 pt-2">
+            
+            {/* Live Monogram Badge / Avatar Selector (No Photo Required!) */}
+            <div className="p-4 rounded-2xl bg-[#16151B] border border-white/10 space-y-3">
+              <div className="flex items-center gap-3.5">
+                <img 
+                  src={customPhotoUrl.trim() || getInitialsAvatar(newMember.name || 'Member', selectedGradient)} 
+                  alt="Avatar Preview" 
+                  className="w-14 h-14 rounded-2xl object-cover ring-2 ring-violet-500/40 shadow-lg shrink-0" 
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Monogram Badge Preview</span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-violet-500/20 text-violet-300">
+                      Auto Generated
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-white/50 leading-tight mt-0.5">
+                    <strong>No photo required!</strong> A monogram badge with their initials is generated automatically. Pick a color theme below:
+                  </p>
+                </div>
+              </div>
+
+              {/* 6 Gradient Theme Selectors */}
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[10px] font-mono text-white/40 uppercase block">Badge Color Theme:</span>
+                <div className="flex items-center gap-2.5">
+                  {AVATAR_GRADIENTS.map((grad) => (
+                    <button
+                      key={grad.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedGradient(grad.id);
+                        setCustomPhotoUrl('');
+                      }}
+                      style={{ background: `linear-gradient(135deg, ${grad.from}, ${grad.to})` }}
+                      className={`w-7 h-7 rounded-xl transition-all cursor-pointer ${
+                        selectedGradient === grad.id && !customPhotoUrl
+                          ? 'ring-2 ring-white scale-110 shadow-lg shadow-violet-500/30'
+                          : 'opacity-70 hover:opacity-100 hover:scale-105'
+                      }`}
+                      title={grad.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Optional Custom Photo toggle */}
+              <div className="pt-2 border-t border-white/5">
+                {!showCustomPhotoInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomPhotoInput(true)}
+                    className="text-[11px] font-mono text-violet-400 hover:text-violet-300 transition-colors cursor-pointer"
+                  >
+                    + Have a custom photo URL? (Optional)
+                  </button>
+                ) : (
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="font-mono text-[10px] uppercase text-white/50">Custom Photo Link (Optional)</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomPhotoUrl('');
+                          setShowCustomPhotoInput(false);
+                        }}
+                        className="text-[10px] text-white/40 hover:text-white"
+                      >
+                        Reset to Initials Badge
+                      </button>
+                    </div>
+                    <input
+                      type="url"
+                      value={customPhotoUrl}
+                      onChange={(e) => setCustomPhotoUrl(e.target.value)}
+                      placeholder="https://example.com/photo.jpg"
+                      className="w-full px-3 py-2 rounded-xl bg-[#0F0E11] border border-white/10 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-violet-400"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
                 Full Name

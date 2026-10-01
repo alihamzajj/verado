@@ -10,6 +10,7 @@ import {
   Check
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { getInitialsAvatar } from '../../lib/avatar';
 
 export const AdminHeader: React.FC = () => {
   const { currentUser, users, setCurrentUser, addNotification } = useApp();
@@ -57,6 +58,9 @@ export const AdminHeader: React.FC = () => {
               <img 
                 src={currentUser.avatar} 
                 alt={currentUser.name} 
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = getInitialsAvatar(currentUser.name);
+                }}
                 className="w-6 h-6 rounded-full object-cover" 
               />
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400" />
@@ -94,7 +98,14 @@ export const AdminHeader: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-lg object-cover" />
+                      <img 
+                        src={user.avatar} 
+                        alt={user.name} 
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = getInitialsAvatar(user.name);
+                        }}
+                        className="w-7 h-7 rounded-lg object-cover" 
+                      />
                       <div>
                         <div className="font-medium text-white">{user.name}</div>
                         <div className="font-mono text-[10px] text-white/50">

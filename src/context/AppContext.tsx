@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Project, User, Permissions, UserRole, ActivityItem, CodeFile } from '../types';
 import { INITIAL_PROJECTS, INITIAL_USERS, INITIAL_ACTIVITIES, MOCK_CODE_FILES } from '../data/mockData';
 import { isSupabaseConfigured, fetchProjectsFromSupabase, upsertProjectToSupabase, deleteProjectFromSupabase } from '../lib/supabase';
+import { getInitialsAvatar } from '../lib/avatar';
 
 interface NotificationItem {
   id: string;
@@ -436,13 +437,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       manageTeam: isTargetOwner,
     };
 
-    const defaultAvatars = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
-    ];
-    const assignedAvatar = userData.avatar || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+    const assignedAvatar = userData.avatar || getInitialsAvatar(trimmedName);
 
     const newUser: User = {
       id: newId,
