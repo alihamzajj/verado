@@ -10,18 +10,46 @@ import {
   Sliders, 
   UserCheck, 
   Sparkles,
-  Info
+  Info,
+  UserPlus,
+  Trash2,
+  Mail,
+  User as UserIcon
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { User, Permissions, UserRole } from '../../types';
 import { Modal } from '../../components/common/Modal';
 
 export const AdminUsersPage: React.FC = () => {
-  const { users, currentUser, setCurrentUser, updateUserPermissions, addNotification } = useApp();
+  const { 
+    users, 
+    currentUser, 
+    setCurrentUser, 
+    updateUserPermissions, 
+    addUser, 
+    deleteUser, 
+    addNotification 
+  } = useApp();
+
   const isOwner = currentUser.role === 'Owner';
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
-  // Modal local state
+  // New member form state
+  const [newMember, setNewMember] = useState<{
+    name: string;
+    email: string;
+    role: UserRole;
+    codeAccess: 'Full Access' | 'Read Only' | 'Locked';
+  }>({
+    name: '',
+    email: '',
+    role: 'Developer',
+    codeAccess: 'Full Access',
+  });
+
+  // Modal local state for editing permissions
   const [modalRole, setModalRole] = useState<UserRole>('Developer');
   const [modalPermissions, setModalPermissions] = useState<Permissions>({
     viewProjects: true,
@@ -54,6 +82,31 @@ export const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleAddMemberSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isOwner) {
+      addNotification('Access Denied: Only the Studio Owner can add team members.', 'error');
+      return;
+    }
+    if (!newMember.name.trim() || !newMember.email.trim()) {
+      addNotification('Please enter both name and email.', 'error');
+      return;
+    }
+    addUser({
+      name: newMember.name,
+      email: newMember.email,
+      role: newMember.role,
+      codeAccess: newMember.codeAccess,
+    });
+    setNewMember({
+      name: '',
+      email: '',
+      role: 'Developer',
+      codeAccess: 'Full Access',
+    });
+    setIsAddModalOpen(false);
+  };
+
   const permissionItems: { key: keyof Permissions; label: string; desc: string }[] = [
     { key: 'viewProjects', label: 'View Projects', desc: 'Allows viewing of public and private app specs' },
     { key: 'addProjects', label: 'Add Projects', desc: 'Can register new mobile applications in catalog' },
@@ -79,17 +132,40 @@ export const AdminUsersPage: React.FC = () => {
             Team Members & Permissions
           </h1>
           <p className="text-xs sm:text-sm text-white/60 mt-1">
-            Granular role-based access control. Configure project catalog editing and release deployment permissions.
+            Granular role-based access control. Configure project catalog editing, release access, and team roster.
           </p>
         </div>
 
-        {/* Current Active Persona Reminder */}
-        <div className="p-3.5 rounded-2xl bg-[#0F0E11] border border-white/10 flex items-center gap-3">
-          <img src={currentUser.avatar} alt={currentUser.name} className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10" />
-          <div className="text-xs">
-            <span className="text-white/40 block font-mono text-[10px] uppercase">Logged in persona:</span>
-            <span className="font-bold text-white">{currentUser.name} <span className="text-violet-400 font-mono font-normal">({currentUser.role})</span></span>
+        {/* Right Header Actions */}
+        <div className="flex items-center gap-3">
+          {/* Current Active Persona Reminder */}
+          <div className="p-3.5 rounded-2xl bg-[#0F0E11] border border-white/10 flex items-center gap-3">
+            <img src={currentUser.avatar} alt={currentUser.name} className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10" />
+            <div className="text-xs">
+              <span className="text-white/40 block font-mono text-[10px] uppercase">Logged in persona:</span>
+              <span className="font-bold text-white">{currentUser.name} <span className="text-violet-400 font-mono font-normal">({currentUser.role})</span></span>
+            </div>
           </div>
+
+          {/* Add Team Member Button (Owner Only) */}
+          {isOwner ? (
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-violet-400" />
+              <span>+ Add Member</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#16151B]/40 text-white/30 border border-white/5 font-mono text-xs uppercase tracking-wider cursor-not-allowed"
+              title="Only Studio Owner can add team members"
+            >
+              <Lock className="w-4 h-4 text-white/20" />
+              <span>+ Add Member</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -98,11 +174,11 @@ export const AdminUsersPage: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <ShieldCheck className="w-4 h-4 text-violet-400 shrink-0" />
           <span className="text-white/80">
-            <strong className="text-white">Studio Policy:</strong> Owner holds exclusive delete authority. Team members can view, add, or edit projects based on assigned roles, but cannot delete catalog data.
+            <strong className="text-white">Studio Policy:</strong> Owner holds exclusive authority to add/remove members, assign roles, and delete catalog data. Team members can draft and edit applications based on their assigned role.
           </span>
         </div>
         <span className="font-mono text-[10px] text-violet-300 bg-violet-500/10 px-2.5 py-1 rounded-full border border-violet-500/20 whitespace-nowrap">
-          Delete: Owner Only
+          Governance: Owner Enforced
         </span>
       </div>
 
@@ -195,6 +271,8 @@ export const AdminUsersPage: React.FC = () => {
                     {/* Actions */}
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2 font-mono">
+                        
+                        {/* Permissions & Role configuration */}
                         <button
                           onClick={() => handleOpenPermissions(user)}
                           disabled={!isOwner}
@@ -203,12 +281,13 @@ export const AdminUsersPage: React.FC = () => {
                               ? 'bg-[#16151B] hover:bg-black text-white/80 hover:text-white border-white/10 hover:border-violet-400/50 cursor-pointer'
                               : 'bg-white/5 text-white/30 border-white/5 cursor-not-allowed'
                           }`}
-                          title={isOwner ? 'Configure Permissions' : 'Only Studio Owner can configure permissions'}
+                          title={isOwner ? 'Configure Role & Permissions' : 'Only Studio Owner can configure permissions'}
                         >
                           <Sliders className="w-3 h-3 text-violet-400" />
-                          <span>Permissions</span>
+                          <span>Role & Access</span>
                         </button>
 
+                        {/* Persona switcher */}
                         <button
                           onClick={() => setCurrentUser(user)}
                           disabled={isCurrent}
@@ -218,8 +297,30 @@ export const AdminUsersPage: React.FC = () => {
                               : 'bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-bold'
                           }`}
                         >
-                          {isCurrent ? 'Active Account' : 'Switch User'}
+                          {isCurrent ? 'Active' : 'Switch'}
                         </button>
+
+                        {/* Remove Team Member button (Owner Only, Cannot delete self) */}
+                        {!isCurrent && (
+                          isOwner ? (
+                            <button
+                              onClick={() => setUserToDelete(user)}
+                              className="p-2 rounded-full bg-[#16151B] hover:bg-rose-500/20 text-white/60 hover:text-rose-400 border border-white/10 hover:border-rose-500/30 transition-colors cursor-pointer"
+                              title={`Remove ${user.name} from studio team`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <button
+                              disabled
+                              className="p-2 rounded-full bg-white/5 text-white/20 border border-white/5 cursor-not-allowed"
+                              title="Only Studio Owner can remove team members"
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                            </button>
+                          )
+                        )}
+
                       </div>
                     </td>
 
@@ -230,6 +331,154 @@ export const AdminUsersPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Add Member Modal */}
+      {isAddModalOpen && (
+        <Modal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          title="Add New Team Member"
+          subtitle="Invite a new developer, editor, or administrator to the studio team."
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleAddMemberSubmit} className="space-y-4 pt-2">
+            <div>
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
+                Full Name
+              </label>
+              <div className="relative">
+                <UserIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+                <input
+                  type="text"
+                  required
+                  value={newMember.name}
+                  onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                  placeholder="e.g. Jordan Hayes"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
+                <input
+                  type="email"
+                  required
+                  value={newMember.email}
+                  onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                  placeholder="e.g. jordan@verado.io"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-violet-400 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
+                Assigned Role
+              </label>
+              <select
+                value={newMember.role}
+                onChange={(e) => setNewMember({ ...newMember, role: e.target.value as UserRole })}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-violet-400 cursor-pointer"
+              >
+                <option value="Developer" className="bg-[#0F0E11]">Developer (Engineering & Catalog Drafting)</option>
+                <option value="Editor" className="bg-[#0F0E11]">Editor (Release Notes & Copywriting)</option>
+                <option value="Content Manager" className="bg-[#0F0E11]">Content Manager (Media & Storefront Assets)</option>
+                <option value="Owner" className="bg-[#0F0E11]">Owner (Full Executive & Delete Authority)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-mono text-xs font-bold uppercase tracking-wider text-white/70 mb-1.5">
+                Code Repository Access
+              </label>
+              <select
+                value={newMember.codeAccess}
+                onChange={(e) => setNewMember({ ...newMember, codeAccess: e.target.value as any })}
+                className="w-full px-4 py-2.5 rounded-xl bg-[#16151B] border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-violet-400 cursor-pointer"
+              >
+                <option value="Full Access" className="bg-[#0F0E11]">Full Access (Read, Write & Branch)</option>
+                <option value="Read Only" className="bg-[#0F0E11]">Read Only</option>
+                <option value="Locked" className="bg-[#0F0E11]">Locked (No Code Access)</option>
+              </select>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs space-y-1">
+              <span className="font-mono text-xs text-white font-bold flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-violet-400" />
+                <span>Security Policy</span>
+              </span>
+              <p className="text-[11px] text-white/70 leading-relaxed">
+                New members can draft and edit applications. The authority to delete catalog projects or remove members is permanently locked to the Studio Owner.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-5 py-2.5 rounded-full bg-[#16151B] hover:bg-black border border-white/10 text-white/80 hover:text-white text-xs font-mono uppercase tracking-wider cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer"
+              >
+                Add Member
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Remove Member Confirmation Modal */}
+      {userToDelete && (
+        <Modal
+          isOpen={!!userToDelete}
+          onClose={() => setUserToDelete(null)}
+          title="Remove Team Member?"
+          subtitle={`Revoke access for ${userToDelete.name}`}
+          maxWidth="max-w-md"
+        >
+          <div className="space-y-4 pt-2">
+            <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-200 leading-relaxed space-y-2">
+              <p>
+                Are you sure you want to remove <strong className="text-white">{userToDelete.name}</strong> (<span className="font-mono text-white/80">{userToDelete.email}</span>) from the studio team?
+              </p>
+              <p className="text-[11px] text-rose-300/80">
+                They will lose all access to the admin dashboard, project drafting, and code workspaces. This action can only be performed by the Studio Owner.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setUserToDelete(null)}
+                className="px-5 py-2.5 rounded-full bg-[#16151B] hover:bg-black border border-white/10 text-white/80 hover:text-white text-xs font-mono uppercase tracking-wider cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (userToDelete) {
+                    deleteUser(userToDelete.id);
+                    setUserToDelete(null);
+                  }
+                }}
+                className="px-6 py-2.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                Confirm Remove
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {/* Permission Drawer / Modal */}
       {selectedUser && (
@@ -326,7 +575,7 @@ export const AdminUsersPage: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-[11px] text-amber-200/80 leading-relaxed">
-                    Team members can be granted rights to view, add, and edit applications, but the authority to permanently delete catalog projects or remove data is strictly locked to the Studio Owner.
+                    Team members can be granted rights to view, add, and edit applications, but the authority to permanently delete catalog projects or remove team members is strictly locked to the Studio Owner.
                   </p>
                 </div>
               </div>

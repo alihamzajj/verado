@@ -24,6 +24,8 @@ interface AppContextType {
   currentUser: User;
   setCurrentUser: (user: User) => void;
   loginAsUser: (userId: string) => void;
+  addUser: (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked' }) => void;
+  deleteUser: (userId: string) => void;
   updateUserPermissions: (userId: string, permissions: Partial<Permissions>, role?: UserRole) => void;
   
   activities: ActivityItem[];
@@ -399,6 +401,101 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addUser = (userData: { name: string; email: string; role: UserRole; avatar?: string; codeAccess?: 'Full Access' | 'Read Only' | 'Locked' }) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can add team members.', 'error');
+      return;
+    }
+
+    const trimmedName = userData.name.trim();
+    const trimmedEmail = userData.email.trim();
+
+    if (!trimmedName || !trimmedEmail) {
+      addNotification('Name and email are required to add a team member.', 'error');
+      return;
+    }
+
+    if (users.some(u => u.email.toLowerCase() === trimmedEmail.toLowerCase())) {
+      addNotification('A team member with this email already exists.', 'error');
+      return;
+    }
+
+    const newId = 'u-' + Math.random().toString(36).substring(2, 8);
+    const isTargetOwner = userData.role === 'Owner';
+
+    const permissions: Permissions = {
+      viewProjects: true,
+      addProjects: true,
+      editProjects: true,
+      createBranch: userData.role === 'Developer' || isTargetOwner,
+      previewChanges: true,
+      codeEditor: userData.role === 'Developer' || isTargetOwner,
+      mergeToProduction: isTargetOwner,
+      deployProduction: isTargetOwner,
+      deleteProjects: isTargetOwner,
+      manageTeam: isTargetOwner,
+    };
+
+    const defaultAvatars = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
+    ];
+    const assignedAvatar = userData.avatar || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+
+    const newUser: User = {
+      id: newId,
+      name: trimmedName,
+      email: trimmedEmail,
+      avatar: assignedAvatar,
+      role: userData.role,
+      status: 'Active',
+      codeAccess: userData.codeAccess || (userData.role === 'Developer' ? 'Full Access' : 'Read Only'),
+      permissions,
+      lastActive: 'Just joined',
+    };
+
+    setUsers(prev => [...prev, newUser]);
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Added ${newUser.name} as ${newUser.role} to the studio team`,
+      target: newUser.role,
+      type: 'user',
+    });
+
+    addNotification(`Team member "${newUser.name}" added successfully as ${newUser.role}!`, 'success');
+  };
+
+  const deleteUser = (userId: string) => {
+    if (currentUser.role !== 'Owner') {
+      addNotification('Access Denied: Only the Studio Owner can remove team members.', 'error');
+      return;
+    }
+
+    if (userId === currentUser.id) {
+      addNotification('Cannot remove your own active owner account.', 'error');
+      return;
+    }
+
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) return;
+
+    setUsers(prev => prev.filter(u => u.id !== userId));
+
+    addActivity({
+      user: currentUser.name,
+      avatar: currentUser.avatar,
+      action: `Removed team member "${targetUser.name}" (${targetUser.role})`,
+      target: targetUser.email,
+      type: 'user',
+    });
+
+    addNotification(`Team member "${targetUser.name}" was removed from the studio team.`, 'info');
+  };
+
   const updateUserPermissions = (userId: string, permissions: Partial<Permissions>, newRole?: UserRole) => {
     if (currentUser.role !== 'Owner') {
       addNotification('Access Denied: Only the Studio Owner can configure team permissions.', 'error');
@@ -489,6 +586,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentUser,
         setCurrentUser,
         loginAsUser,
+        addUser,
+        deleteUser,
         updateUserPermissions,
         activities,
         addActivity,
