@@ -95,8 +95,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Notifications / toasts
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  // Dark/Light Theme
-  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(true);
+  // Dark Theme (Locked to luxury amethyst crystal design)
+  const isDarkTheme = true;
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem('verado_theme');
+    } catch {}
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Cloud Database state
   const [isSupabaseLive, setIsSupabaseLive] = useState<boolean>(isSupabaseConfigured());
@@ -152,19 +160,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const toggleTheme = () => {
-    setIsDarkTheme(prev => {
-      const next = !prev;
-      if (next) {
-        document.documentElement.classList.remove('light');
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-      }
-      return next;
-    });
-  };
+  const toggleTheme = () => {};
 
   const addProject = (projectData: Omit<Project, 'id' | 'lastUpdated' | 'rating' | 'reviewsCount' | 'downloads'>): Project => {
     const newId = projectData.name.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.floor(Math.random() * 1000);

@@ -8,6 +8,7 @@ interface DeviceMockupProps {
   category?: string;
   accentColor?: string;
   className?: string;
+  showOverlay?: boolean;
   children?: React.ReactNode;
 }
 
@@ -18,6 +19,7 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
   category,
   accentColor = '#38bdf8',
   className = '',
+  showOverlay = false,
   children,
 }) => {
   return (
@@ -62,21 +64,25 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
                   alt={appName}
                   className="w-full h-full object-cover transition-opacity duration-500" 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0F0E11] via-[#0F0E11]/30 to-transparent" />
-                
-                {/* Overlay Card Inside Phone */}
-                <div className="absolute bottom-4 inset-x-3 p-3.5 rounded-2xl bg-[#0F0E11]/92 backdrop-blur-md border border-white/15 shadow-2xl">
-                  {category && (
-                    <span 
-                      className="inline-block text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 text-white shadow-sm"
-                      style={{ backgroundColor: accentColor }}
-                    >
-                      {category}
-                    </span>
-                  )}
-                  <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">{appName}</h4>
-                  <p className="text-[10px] text-white/70 line-clamp-2 mt-0.5 leading-snug">{tagline}</p>
-                </div>
+                {showOverlay && (
+                  <>
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D0B14] via-[#0D0B14]/35 to-transparent pointer-events-none" />
+                    
+                    {/* Overlay Card Inside Phone */}
+                    <div className="absolute bottom-4 inset-x-3 p-3.5 rounded-2xl bg-[#0D0B14]/88 backdrop-blur-xl border border-white/10 shadow-2xl">
+                      {category && (
+                        <span 
+                          className="inline-block text-[9px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 text-white shadow-sm"
+                          style={{ backgroundColor: accentColor }}
+                        >
+                          {category}
+                        </span>
+                      )}
+                      <h4 className="text-xs sm:text-sm font-bold text-white leading-tight">{appName}</h4>
+                      <p className="text-[10px] text-white/70 line-clamp-2 mt-0.5 leading-snug">{tagline}</p>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="h-full flex flex-col items-center justify-center p-6 text-center">

@@ -10,7 +10,6 @@ import {
   Check
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { ThemeToggle } from '../common/ThemeToggle';
 
 export const AdminHeader: React.FC = () => {
   const { currentUser, users, setCurrentUser, addNotification } = useApp();
@@ -122,8 +121,6 @@ export const AdminHeader: React.FC = () => {
             </div>
           )}
         </div>
-
-        <ThemeToggle />
 
         {/* Notifications Icon */}
         <div className="relative">

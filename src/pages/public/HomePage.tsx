@@ -23,35 +23,35 @@ export const HomePage: React.FC = () => {
   const featuredProjects = projects.filter(p => p.featured && p.published);
   const latestProjects = projects.filter(p => p.published).slice(0, 6);
 
-  const [activeHeroApp, setActiveHeroApp] = useState<'shoecheck' | 'foodai' | 'pulsefit'>('shoecheck');
+  const [activeHeroApp, setActiveHeroApp] = useState<'brainwave' | 'pulsefit' | 'shoecheck'>('brainwave');
 
   const heroAppDetails = {
-    shoecheck: {
-      name: 'ShoeCheck AI',
-      category: 'AI Computer Vision',
-      tagline: 'Instant Sneaker Legit-Check & Condition Analyzer',
-      stats: '850K+ Downloads • 4.9 ★',
-      img: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=600&auto=format&fit=crop&q=80',
-      accent: '#f97316',
-      id: 'shoecheck',
-    },
-    foodai: {
-      name: 'FoodAI Nutritionist',
-      category: 'Computer Vision Health',
-      tagline: 'Snap your meal to auto-calculate macros & calories',
-      stats: '1.4M+ Downloads • 4.8 ★',
-      img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
-      accent: '#10b981',
-      id: 'foodai',
+    brainwave: {
+      name: 'BrainWave AI Studio',
+      category: 'Neural App Suite',
+      tagline: 'Hardware-accelerated AI models & fluid 120 FPS interface',
+      stats: '1.8M+ Downloads • 4.9 ★',
+      img: '/phone-screen.jpg',
+      accent: '#A78BFA',
+      id: 'brainwave-ai',
     },
     pulsefit: {
       name: 'PulseFit Pro',
       category: 'Bio-Sensor Fitness',
       tagline: 'Adaptive HIIT training with wearable heart rate telemetry',
       stats: '920K+ Downloads • 4.9 ★',
-      img: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=80',
-      accent: '#ec4899',
+      img: '/phone-fitness.svg',
+      accent: '#C4B5FD',
       id: 'pulsefit-tracker',
+    },
+    shoecheck: {
+      name: 'ShoeCheck AI',
+      category: 'Computer Vision',
+      tagline: 'Instant Sneaker Legit-Check & Condition Analyzer',
+      stats: '850K+ Downloads • 4.9 ★',
+      img: '/phone-sneaker.svg',
+      accent: '#8B5CF6',
+      id: 'shoecheck',
     },
   };
 
@@ -68,7 +68,7 @@ export const HomePage: React.FC = () => {
     <div className="space-y-6 sm:space-y-8">
       
       {/* 1. HERO CONTAINER (NixtNode Inspired Radial Glow + Curved Orbits + Front Phone Showcase) */}
-      <section className="relative rounded-[36px] sm:rounded-[44px] overflow-hidden hero-radial-glow border border-white/[0.08] p-6 sm:p-10 lg:p-14 pb-20 sm:pb-28 lg:pb-32 shadow-2xl shadow-purple-950/30 text-white flex flex-col justify-center">
+      <section className="relative rounded-[36px] sm:rounded-[44px] overflow-hidden hero-radial-glow border border-black/80 shadow-[inset_0_0_35px_rgba(0,0,0,0.85),0_20px_50px_rgba(0,0,0,0.6)] p-6 sm:p-10 lg:p-14 text-white flex flex-col justify-center">
         
         {/* Curved Line Arcs & Orbits (1px stroke thin curves from reference) */}
         <svg 
@@ -145,36 +145,36 @@ export const HomePage: React.FC = () => {
                 <span>&#125;</span>
                 <span>SWITCH LIVE PREVIEW</span>
               </div>
-              <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-full bg-[#0F0E11]/90 border border-white/10 w-fit shadow-xl backdrop-blur-md">
+              <div className="flex flex-wrap items-center gap-2 p-1.5 rounded-full bg-[#0D0B14]/80 border border-white/10 w-fit shadow-xl backdrop-blur-md">
                 <button
-                  onClick={() => setActiveHeroApp('shoecheck')}
+                  onClick={() => setActiveHeroApp('brainwave')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
-                    activeHeroApp === 'shoecheck' 
-                      ? 'bg-black text-white border border-white/20 font-bold shadow-md' 
+                    activeHeroApp === 'brainwave' 
+                      ? 'bg-white/15 text-white border border-white/20 font-bold shadow-md' 
                       : 'text-white/60 hover:text-white'
                   }`}
                 >
-                  ShoeCheck AI
-                </button>
-                <button
-                  onClick={() => setActiveHeroApp('foodai')}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
-                    activeHeroApp === 'foodai' 
-                      ? 'bg-black text-white border border-white/20 font-bold shadow-md' 
-                      : 'text-white/60 hover:text-white'
-                  }`}
-                >
-                  FoodAI
+                  Neural Studio
                 </button>
                 <button
                   onClick={() => setActiveHeroApp('pulsefit')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
                     activeHeroApp === 'pulsefit' 
-                      ? 'bg-black text-white border border-white/20 font-bold shadow-md' 
+                      ? 'bg-white/15 text-white border border-white/20 font-bold shadow-md' 
                       : 'text-white/60 hover:text-white'
                   }`}
                 >
                   PulseFit Pro
+                </button>
+                <button
+                  onClick={() => setActiveHeroApp('shoecheck')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                    activeHeroApp === 'shoecheck' 
+                      ? 'bg-white/15 text-white border border-white/20 font-bold shadow-md' 
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  ShoeCheck AI
                 </button>
               </div>
 
@@ -191,8 +191,8 @@ export const HomePage: React.FC = () => {
 
           </div>
 
-          {/* Right Column: Front Cellphone with Deployment-Safe Animation & Ambient Glow */}
-          <div className="lg:col-span-5 flex justify-center lg:justify-end items-center relative pt-4 lg:pt-0">
+          {/* Right Column: Front Cellphone with Deployment-Safe Animation & Ambient Glow (Shifted slightly left from right) */}
+          <div className="lg:col-span-5 flex justify-center items-center relative pt-4 lg:pt-0 lg:-translate-x-12 xl:-translate-x-16">
             {/* Ambient Purple Radial Glow behind phone */}
             <div className="absolute w-72 h-72 bg-violet-600/35 rounded-full blur-3xl pointer-events-none animate-phone-glow" />
 
@@ -212,12 +212,12 @@ export const HomePage: React.FC = () => {
 
       </section>
 
-      {/* 2. STATS SECTION (Signature NixtNode Overlapping Blackish Cards with Technical Divider Nodes) */}
-      <section className="relative -mt-10 sm:-mt-16 lg:-mt-20 z-20 px-2 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-end">
+      {/* 2. STATS SECTION (Signature NixtNode Blackish Cards with Technical Divider Nodes) */}
+      <section className="relative px-2 sm:px-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-stretch">
           
           {/* Stat Card 1 */}
-          <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between min-h-[220px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[220px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
             <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] uppercase tracking-wider mb-2">
               <span className="flex items-center gap-1.5">
                 <span className="text-violet-400 font-bold">&#125;</span>
@@ -247,8 +247,8 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Stat Card 2 (Elevated higher like Card 34 in reference screenshot) */}
-          <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.09] p-6 sm:p-8 shadow-2xl flex flex-col justify-between min-h-[220px] md:-translate-y-6 transition-transform duration-300 hover:-translate-y-7 group backdrop-blur-xl relative overflow-hidden shadow-[0_16px_44px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.07)]">
+          {/* Stat Card 2 */}
+          <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[220px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl relative overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
             {/* Subtle corner glow */}
             <div className="absolute -top-12 -right-12 w-28 h-28 bg-purple-600/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -282,7 +282,7 @@ export const HomePage: React.FC = () => {
           </div>
 
           {/* Stat Card 3 */}
-          <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between min-h-[220px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[220px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
             <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] uppercase tracking-wider mb-2">
               <span className="flex items-center gap-1.5">
                 <span className="text-violet-400 font-bold">&#125;</span>

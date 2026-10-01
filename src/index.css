@@ -32,7 +32,7 @@
 
 /* Radial Glow from Design Reference */
 .hero-radial-glow {
-  background: radial-gradient(ellipse at 68% 38%, #F5F0FF 0%, #D1C0F8 22%, #6C42BC 52%, #261647 80%, #0F0E11 100%);
+  background: radial-gradient(ellipse at 64% 38%, #F5F0FF 0%, #D1C0F8 18%, #6C42BC 46%, #22103E 68%, #0C0618 84%, #000000 100%);
 }
 
 .hero-radial-glow-subtle {
