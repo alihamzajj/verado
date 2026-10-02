@@ -108,7 +108,7 @@ export const AboutPage: React.FC = () => {
       </div>
 
       {/* CTA Box */}
-      <div className="rounded-[36px] hero-radial-glow border border-white/10 text-center max-w-4xl mx-auto p-10 sm:p-14 shadow-2xl text-white space-y-4">
+      <div className="rounded-[36px] cta-radial-glow border border-violet-500/20 text-center max-w-4xl mx-auto p-10 sm:p-14 shadow-2xl shadow-purple-950/40 text-white space-y-4">
         <div className="flex items-center justify-center gap-2 text-xs font-mono uppercase tracking-widest text-violet-300 font-semibold">
           <span>&#125;</span>
           <span>Explore</span>
