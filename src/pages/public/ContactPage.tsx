@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, MapPin, Phone, MessageSquare, Send, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
+import { Mail, MapPin, Phone, MessageSquare, Send, CheckCircle2, ChevronDown, Loader2, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { submitContactInquiry } from '../../lib/supabase';
 
@@ -57,17 +57,55 @@ export const ContactPage: React.FC = () => {
   return (
     <div className="py-6 sm:py-10 px-2 sm:px-4 lg:px-6 max-w-7xl mx-auto min-h-screen space-y-8">
       
-      {/* Header Container */}
-      <div className="rounded-[32px] sm:rounded-[40px] bg-gradient-to-b from-[#180F2E] via-[#110B20] to-[#0A0714] border border-violet-500/20 p-8 sm:p-14 text-center shadow-2xl shadow-purple-950/40 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-48 bg-gradient-to-b from-violet-500/20 via-purple-600/10 to-transparent blur-3xl pointer-events-none" />
+      {/* Header Container with Crystalline Facets & Specular Glass Reflection */}
+      <div className="rounded-[32px] sm:rounded-[40px] bg-gradient-to-b from-[#1E113A]/90 via-[#130B24]/90 to-[#0A0515]/95 backdrop-blur-xl border border-violet-400/25 p-8 sm:p-14 text-center shadow-[0_20px_60px_rgba(10,5,24,0.7),inset_0_1px_1px_rgba(255,255,255,0.18),inset_0_0_20px_rgba(167,139,250,0.08)] relative overflow-hidden group">
+        
+        {/* Prismatic Crystal Shards & Facet Refraction Lines */}
+        <svg 
+          className="absolute inset-0 w-full h-full pointer-events-none opacity-40 mix-blend-screen"
+          viewBox="0 0 1200 400" 
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient id="crystalFacet1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.25" />
+              <stop offset="50%" stopColor="#8B5CF6" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="#4C1D95" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="crystalFacet2" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#E9D5FF" stopOpacity="0.2" />
+              <stop offset="60%" stopColor="#A855F7" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#3B0764" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+
+          {/* Crystalline Polygon Shards */}
+          <polygon points="0,0 350,0 220,180 0,140" fill="url(#crystalFacet1)" stroke="rgba(196,181,253,0.15)" strokeWidth="0.75" />
+          <polygon points="350,0 720,0 600,160 220,180" fill="url(#crystalFacet2)" stroke="rgba(196,181,253,0.12)" strokeWidth="0.75" />
+          <polygon points="720,0 1200,0 1020,150 600,160" fill="url(#crystalFacet1)" stroke="rgba(196,181,253,0.15)" strokeWidth="0.75" />
+          <polygon points="220,180 600,160 520,380 120,320" fill="url(#crystalFacet2)" stroke="rgba(167,139,250,0.1)" strokeWidth="0.75" />
+          <polygon points="600,160 1020,150 940,360 520,380" fill="url(#crystalFacet1)" stroke="rgba(167,139,250,0.12)" strokeWidth="0.75" />
+          <polygon points="1020,150 1200,0 1200,320 940,360" fill="url(#crystalFacet2)" stroke="rgba(196,181,253,0.12)" strokeWidth="0.75" />
+
+          {/* Refracted Prismatic Highlights */}
+          <line x1="220" y1="180" x2="600" y2="160" stroke="rgba(233,213,255,0.35)" strokeWidth="1" />
+          <line x1="600" y1="160" x2="1020" y2="150" stroke="rgba(233,213,255,0.3)" strokeWidth="1" />
+          <circle cx="600" cy="160" r="2.5" fill="#FFFFFF" opacity="0.6" />
+          <circle cx="220" cy="180" r="2" fill="#FFFFFF" opacity="0.5" />
+          <circle cx="1020" cy="150" r="2" fill="#FFFFFF" opacity="0.5" />
+        </svg>
+
+        {/* Soft Crystalline Light Core */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-44 bg-gradient-to-b from-violet-500/25 via-fuchsia-600/10 to-transparent blur-3xl pointer-events-none" />
+
         <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300 font-mono text-xs uppercase tracking-wider shadow-sm">
-            <span>&#125;</span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-950/60 border border-violet-400/35 text-violet-200 font-mono text-xs uppercase tracking-wider shadow-[0_0_16px_rgba(167,139,250,0.25)] backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 text-violet-300 animate-pulse" />
             <span>Direct Channel</span>
           </div>
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
+          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
             Get in Touch with{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-purple-300">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-fuchsia-300 drop-shadow-[0_2px_16px_rgba(196,181,253,0.4)]">
               Verado
             </span>
           </h1>
