@@ -44,7 +44,8 @@ export const HomePage: React.FC = () => {
       img: '/lenz-screen-cropped.png',
       accent: '#10B981',
       id: 'shoecheck',
-      hideStatusBar: true,
+      hideStatusBar: false,
+      darkStatusBar: true,
     },
     shoecheck: {
       name: 'ShoeCheck AI',
@@ -207,7 +208,8 @@ export const HomePage: React.FC = () => {
                 category={heroAppDetails[activeHeroApp].category}
                 imageSrc={heroAppDetails[activeHeroApp].img}
                 accentColor={heroAppDetails[activeHeroApp].accent}
-                hideStatusBar={Boolean(heroAppDetails[activeHeroApp].hideStatusBar)}
+                hideStatusBar={Boolean((heroAppDetails[activeHeroApp] as any).hideStatusBar)}
+                darkStatusBar={Boolean((heroAppDetails[activeHeroApp] as any).darkStatusBar)}
               />
             </div>
           </div>

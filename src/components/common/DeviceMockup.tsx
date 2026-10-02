@@ -10,6 +10,7 @@ interface DeviceMockupProps {
   className?: string;
   showOverlay?: boolean;
   hideStatusBar?: boolean;
+  darkStatusBar?: boolean;
   children?: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
   className = '',
   showOverlay = false,
   hideStatusBar = false,
+  darkStatusBar = false,
   children,
 }) => {
   return (
@@ -36,11 +38,11 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
         <div className="absolute top-28 -right-0.5 w-1 h-12 bg-[#3B3454] rounded-r" />
 
         {/* Inner Bezel Screen */}
-        <div className="relative rounded-[36px] overflow-hidden bg-[#0F0E11] aspect-[9/19] w-[240px] sm:w-[265px] md:w-[275px] border border-white/10 flex flex-col justify-between">
+        <div className={`relative rounded-[36px] overflow-hidden ${darkStatusBar ? 'bg-[#FBF8F5]' : 'bg-[#0F0E11]'} aspect-[9/19] w-[240px] sm:w-[265px] md:w-[275px] border border-white/10 flex flex-col justify-between`}>
           
           {/* Dynamic Island & Status Bar */}
           {!hideStatusBar && (
-            <div className="relative z-20 px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-white/90">
+            <div className={`relative z-20 px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold ${darkStatusBar ? 'text-neutral-800' : 'text-white/90'}`}>
               <span className="font-mono text-[10px]">9:41</span>
               
               {/* Dynamic Island Pill */}
@@ -49,7 +51,7 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               </div>
 
-              <div className="flex items-center gap-1.5 text-white/80">
+              <div className={`flex items-center gap-1.5 ${darkStatusBar ? 'text-neutral-800' : 'text-white/80'}`}>
                 <Signal className="w-3 h-3" />
                 <Wifi className="w-3 h-3" />
                 <Battery className="w-3.5 h-3.5 fill-current" />
@@ -104,7 +106,7 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
 
           {/* Home Indicator Bar */}
           <div className="h-3 flex items-center justify-center pb-2 z-20">
-            <div className="w-24 h-1 bg-white/40 rounded-full" />
+            <div className={`w-24 h-1 rounded-full ${darkStatusBar ? 'bg-neutral-800/40' : 'bg-white/40'}`} />
           </div>
 
         </div>
