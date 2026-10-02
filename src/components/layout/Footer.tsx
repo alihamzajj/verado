@@ -86,7 +86,7 @@ export const Footer: React.FC = () => {
             </li>
             <li>
               <Link to="/projects" className="text-violet-300 hover:text-white font-mono text-[11px] uppercase tracking-wider pt-1 inline-block">
-                All 7 Applications →
+                All Applications →
               </Link>
             </li>
           </ul>

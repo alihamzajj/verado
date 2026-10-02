@@ -628,7 +628,7 @@ export const Footer = () => {
             <li><Link to="/projects/shoecheck" className="hover:text-white">ShoeCheck AI</Link></li>
             <li><Link to="/projects/foodai" className="hover:text-white">FoodAI Nutritionist</Link></li>
             <li><Link to="/projects/pulsefit-tracker" className="hover:text-white">PulseFit Pro</Link></li>
-            <li><Link to="/projects" className="text-sky-400 hover:underline">View All 7 Apps →</Link></li>
+            <li><Link to="/projects" className="text-sky-400 hover:underline">View All Apps →</Link></li>
           </ul>
         </div>
 
