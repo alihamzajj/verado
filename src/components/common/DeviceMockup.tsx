@@ -9,6 +9,7 @@ interface DeviceMockupProps {
   accentColor?: string;
   className?: string;
   showOverlay?: boolean;
+  hideStatusBar?: boolean;
   children?: React.ReactNode;
 }
 
@@ -20,6 +21,7 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
   accentColor = '#38bdf8',
   className = '',
   showOverlay = false,
+  hideStatusBar = false,
   children,
 }) => {
   return (
@@ -37,24 +39,26 @@ export const DeviceMockup: React.FC<DeviceMockupProps> = ({
         <div className="relative rounded-[36px] overflow-hidden bg-[#0F0E11] aspect-[9/19] w-[240px] sm:w-[265px] md:w-[275px] border border-white/10 flex flex-col justify-between">
           
           {/* Dynamic Island & Status Bar */}
-          <div className="relative z-20 px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-white/90">
-            <span className="font-mono text-[10px]">9:41</span>
-            
-            {/* Dynamic Island Pill */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-2.5 h-5 w-20 bg-black rounded-full flex items-center justify-between px-2 shadow-md border border-white/10">
-              <div className="w-2 h-2 rounded-full bg-[#16151B] border border-white/20" />
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            </div>
+          {!hideStatusBar && (
+            <div className="relative z-20 px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold text-white/90">
+              <span className="font-mono text-[10px]">9:41</span>
+              
+              {/* Dynamic Island Pill */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-2.5 h-5 w-20 bg-black rounded-full flex items-center justify-between px-2 shadow-md border border-white/10">
+                <div className="w-2 h-2 rounded-full bg-[#16151B] border border-white/20" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              </div>
 
-            <div className="flex items-center gap-1.5 text-white/80">
-              <Signal className="w-3 h-3" />
-              <Wifi className="w-3 h-3" />
-              <Battery className="w-3.5 h-3.5 fill-current" />
+              <div className="flex items-center gap-1.5 text-white/80">
+                <Signal className="w-3 h-3" />
+                <Wifi className="w-3 h-3" />
+                <Battery className="w-3.5 h-3.5 fill-current" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Screen Content */}
-          <div className="relative flex-1 overflow-hidden">
+          <div className="relative flex-1 overflow-hidden h-full">
             {children ? (
               children
             ) : imageSrc ? (

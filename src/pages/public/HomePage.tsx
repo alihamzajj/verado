@@ -23,7 +23,7 @@ export const HomePage: React.FC = () => {
   const featuredProjects = projects.filter(p => p.featured && p.published && !p.isArchived);
   const latestProjects = projects.filter(p => p.published && !p.isArchived).slice(0, 6);
 
-  const [activeHeroApp, setActiveHeroApp] = useState<'brainwave' | 'pulsefit' | 'shoecheck'>('brainwave');
+  const [activeHeroApp, setActiveHeroApp] = useState<'brainwave' | 'lenz' | 'shoecheck'>('lenz');
 
   const heroAppDetails = {
     brainwave: {
@@ -34,15 +34,17 @@ export const HomePage: React.FC = () => {
       img: '/phone-screen.jpg',
       accent: '#A78BFA',
       id: 'brainwave-ai',
+      hideStatusBar: false,
     },
-    pulsefit: {
-      name: 'PulseFit Pro',
-      category: 'Bio-Sensor Fitness',
-      tagline: 'Adaptive HIIT training with wearable heart rate telemetry',
-      stats: '920K+ Downloads • 4.9 ★',
-      img: '/phone-fitness.svg',
-      accent: '#C4B5FD',
-      id: 'pulsefit-tracker',
+    lenz: {
+      name: 'Lenz AI Authenticator',
+      category: 'AI Computer Vision',
+      tagline: 'Instant item verification & multi-category AI legitimacy scanner',
+      stats: '1.2M+ Scans • 4.9 ★',
+      img: '/lenz-screen-cropped.png',
+      accent: '#10B981',
+      id: 'shoecheck',
+      hideStatusBar: true,
     },
     shoecheck: {
       name: 'ShoeCheck AI',
@@ -52,6 +54,7 @@ export const HomePage: React.FC = () => {
       img: '/phone-sneaker.svg',
       accent: '#8B5CF6',
       id: 'shoecheck',
+      hideStatusBar: false,
     },
   };
 
@@ -157,14 +160,14 @@ export const HomePage: React.FC = () => {
                   Neural Studio
                 </button>
                 <button
-                  onClick={() => setActiveHeroApp('pulsefit')}
+                  onClick={() => setActiveHeroApp('lenz')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${
-                    activeHeroApp === 'pulsefit' 
+                    activeHeroApp === 'lenz' 
                       ? 'bg-white/15 text-white border border-white/20 font-bold shadow-md' 
                       : 'text-white/60 hover:text-white'
                   }`}
                 >
-                  PulseFit Pro
+                  Lenz
                 </button>
                 <button
                   onClick={() => setActiveHeroApp('shoecheck')}
@@ -204,6 +207,7 @@ export const HomePage: React.FC = () => {
                 category={heroAppDetails[activeHeroApp].category}
                 imageSrc={heroAppDetails[activeHeroApp].img}
                 accentColor={heroAppDetails[activeHeroApp].accent}
+                hideStatusBar={Boolean(heroAppDetails[activeHeroApp].hideStatusBar)}
               />
             </div>
           </div>
