@@ -75,59 +75,6 @@
   will-change: transform, opacity;
 }
 
-/* Shining Crystal Prismatic Animations */
-@keyframes crystalShineSweep {
-  0% {
-    transform: translateX(-160%) rotate(25deg);
-    opacity: 0;
-  }
-  20% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 0.75;
-  }
-  75% {
-    opacity: 0.35;
-  }
-  100% {
-    transform: translateX(280%) rotate(25deg);
-    opacity: 0;
-  }
-}
-
-@keyframes crystalSparkleTwinkle {
-  0%, 100% {
-    transform: scale(0.5) rotate(0deg);
-    opacity: 0.25;
-  }
-  50% {
-    transform: scale(1.35) rotate(90deg);
-    opacity: 1;
-    filter: drop-shadow(0 0 10px #F5EEFF);
-  }
-}
-
-.animate-crystal-shine {
-  animation: crystalShineSweep 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  will-change: transform, opacity;
-}
-
-.animate-crystal-sparkle {
-  animation: crystalSparkleTwinkle 2.8s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-
-.animate-crystal-sparkle-delayed {
-  animation: crystalSparkleTwinkle 3.4s ease-in-out 1.2s infinite;
-  will-change: transform, opacity;
-}
-
-.animate-crystal-sparkle-fast {
-  animation: crystalSparkleTwinkle 2.2s ease-in-out 0.6s infinite;
-  will-change: transform, opacity;
-}
-
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 8px;

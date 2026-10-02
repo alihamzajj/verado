@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, MapPin, Phone, MessageSquare, Send, CheckCircle2, ChevronDown, Loader2, Sparkles } from 'lucide-react';
+import { Mail, MapPin, Phone, MessageSquare, Send, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { submitContactInquiry } from '../../lib/supabase';
 
@@ -57,82 +57,18 @@ export const ContactPage: React.FC = () => {
   return (
     <div className="py-6 sm:py-10 px-2 sm:px-4 lg:px-6 max-w-7xl mx-auto min-h-screen space-y-8">
       
-      {/* Header Container with Shining Crystalline Facets & Specular Glass Reflection */}
-      <div className="rounded-[32px] sm:rounded-[40px] bg-gradient-to-b from-[#241348]/95 via-[#150B28]/95 to-[#0A0515]/98 backdrop-blur-xl border border-violet-400/40 p-8 sm:p-14 text-center shadow-[0_20px_70px_rgba(20,5,45,0.7),inset_0_1.5px_2px_rgba(255,255,255,0.35),inset_0_0_30px_rgba(168,85,247,0.18)] relative overflow-hidden group">
-        
-        {/* Prismatic Crystal Shards & Facet Refraction Lines */}
-        <svg 
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-50 mix-blend-screen"
-          viewBox="0 0 1200 400" 
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="crystalFacet1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#DDD0FF" stopOpacity="0.35" />
-              <stop offset="50%" stopColor="#935BF6" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#4C1D95" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="crystalFacet2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#F3E8FF" stopOpacity="0.3" />
-              <stop offset="60%" stopColor="#A855F7" stopOpacity="0.12" />
-              <stop offset="100%" stopColor="#3B0764" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-
-          {/* Crystalline Polygon Shards */}
-          <polygon points="0,0 350,0 220,180 0,140" fill="url(#crystalFacet1)" stroke="rgba(216,180,254,0.22)" strokeWidth="0.8" />
-          <polygon points="350,0 720,0 600,160 220,180" fill="url(#crystalFacet2)" stroke="rgba(216,180,254,0.18)" strokeWidth="0.8" />
-          <polygon points="720,0 1200,0 1020,150 600,160" fill="url(#crystalFacet1)" stroke="rgba(216,180,254,0.22)" strokeWidth="0.8" />
-          <polygon points="220,180 600,160 520,380 120,320" fill="url(#crystalFacet2)" stroke="rgba(196,181,253,0.15)" strokeWidth="0.8" />
-          <polygon points="600,160 1020,150 940,360 520,380" fill="url(#crystalFacet1)" stroke="rgba(196,181,253,0.18)" strokeWidth="0.8" />
-          <polygon points="1020,150 1200,0 1200,320 940,360" fill="url(#crystalFacet2)" stroke="rgba(216,180,254,0.18)" strokeWidth="0.8" />
-
-          {/* Refracted Prismatic Highlights */}
-          <line x1="220" y1="180" x2="600" y2="160" stroke="rgba(245,238,255,0.45)" strokeWidth="1.2" />
-          <line x1="600" y1="160" x2="1020" y2="150" stroke="rgba(245,238,255,0.4)" strokeWidth="1.2" />
-        </svg>
-
-        {/* Sweeping Crystalline Light Sheen Beam (Catching the Light) */}
-        <div className="absolute -inset-y-24 -left-1/3 w-64 bg-gradient-to-r from-transparent via-violet-200/25 via-white/40 to-transparent blur-md pointer-events-none animate-crystal-shine" />
-
-        {/* Twinkling 4-Point Crystal Diamond Stars */}
-        <div className="absolute top-10 left-16 pointer-events-none animate-crystal-sparkle hidden sm:block">
-          <svg className="w-5 h-5 text-violet-200 drop-shadow-[0_0_8px_#E9D5FF]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
-          </svg>
-        </div>
-
-        <div className="absolute top-8 right-24 pointer-events-none animate-crystal-sparkle-delayed hidden sm:block">
-          <svg className="w-6 h-6 text-fuchsia-200 drop-shadow-[0_0_10px_#F5EEFF]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
-          </svg>
-        </div>
-
-        <div className="absolute bottom-10 right-1/4 pointer-events-none animate-crystal-sparkle-fast hidden sm:block">
-          <svg className="w-4 h-4 text-purple-200 drop-shadow-[0_0_8px_#E9D5FF]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
-          </svg>
-        </div>
-
-        <div className="absolute bottom-8 left-1/4 pointer-events-none animate-crystal-sparkle hidden sm:block">
-          <svg className="w-4 h-4 text-violet-100 drop-shadow-[0_0_8px_#FFFFFF]" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0L14.5 9.5L24 12L14.5 14.5L12 24L9.5 14.5L0 12L9.5 9.5L12 0Z" />
-          </svg>
-        </div>
-
-        {/* Soft Crystalline Light Core */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[750px] h-48 bg-gradient-to-b from-violet-500/30 via-fuchsia-500/15 to-transparent blur-3xl pointer-events-none" />
-
+      {/* Header Container */}
+      <div className="rounded-[32px] sm:rounded-[40px] bg-gradient-to-b from-[#180F2E] via-[#110B20] to-[#0A0714] border border-violet-500/20 p-8 sm:p-14 text-center shadow-2xl shadow-purple-950/40 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-48 bg-gradient-to-b from-violet-500/20 via-purple-600/10 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-950/70 border border-violet-400/40 text-violet-200 font-mono text-xs uppercase tracking-wider shadow-[0_0_20px_rgba(167,139,250,0.35)] backdrop-blur-md">
-            <Sparkles className="w-3.5 h-3.5 text-violet-300 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300 font-mono text-xs uppercase tracking-wider shadow-sm">
+            <span>&#125;</span>
             <span>Direct Channel</span>
           </div>
-          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
+          <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
             Get in Touch with{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-100 to-fuchsia-300 drop-shadow-[0_0_24px_rgba(216,180,254,0.7)] relative inline-block">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-purple-300">
               Verado
-              <span className="absolute -top-1 -right-3 text-violet-300 animate-crystal-sparkle text-sm select-none">✦</span>
             </span>
           </h1>
           <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed font-normal">
