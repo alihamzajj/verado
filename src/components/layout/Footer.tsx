@@ -61,31 +61,51 @@ export const Footer: React.FC = () => {
           </h4>
           <ul className="space-y-2.5 text-xs">
             <li>
-              <Link to="/projects/shoecheck" className="hover:text-white transition-colors flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-violet-400" />
-                ShoeCheck AI
-              </Link>
+              <div className="flex items-center justify-between group">
+                <Link to="/apps/shoecheck" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <span>ShoeCheck AI</span>
+                </Link>
+                <Link to="/apps/shoecheck/privacy" className="text-[10px] font-mono text-violet-400/80 hover:text-white transition-colors">
+                  Privacy
+                </Link>
+              </div>
             </li>
             <li>
-              <Link to="/projects/foodai" className="hover:text-white transition-colors flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-purple-400" />
-                FoodAI Nutritionist
-              </Link>
+              <div className="flex items-center justify-between group">
+                <Link to="/apps/foodai" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span>FoodAI Nutritionist</span>
+                </Link>
+                <Link to="/apps/foodai/privacy" className="text-[10px] font-mono text-violet-400/80 hover:text-white transition-colors">
+                  Privacy
+                </Link>
+              </div>
             </li>
             <li>
-              <Link to="/projects/pulsefit-tracker" className="hover:text-white transition-colors flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-violet-300" />
-                PulseFit Pro
-              </Link>
+              <div className="flex items-center justify-between group">
+                <Link to="/apps/pulsefit-tracker" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-400" />
+                  <span>PulseFit Pro</span>
+                </Link>
+                <Link to="/apps/pulsefit-tracker/privacy" className="text-[10px] font-mono text-violet-400/80 hover:text-white transition-colors">
+                  Privacy
+                </Link>
+              </div>
             </li>
             <li>
-              <Link to="/projects/brainwave-ai" className="hover:text-white transition-colors flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-violet-500" />
-                BrainWave Study
-              </Link>
+              <div className="flex items-center justify-between group">
+                <Link to="/apps/brainwave-ai" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                  <span>BrainWave Study</span>
+                </Link>
+                <Link to="/apps/brainwave-ai/privacy" className="text-[10px] font-mono text-violet-400/80 hover:text-white transition-colors">
+                  Privacy
+                </Link>
+              </div>
             </li>
-            <li>
-              <Link to="/projects" className="text-violet-300 hover:text-white font-mono text-[11px] uppercase tracking-wider pt-1 inline-block">
+            <li className="pt-1">
+              <Link to="/projects" className="text-violet-300 hover:text-white font-mono text-[11px] uppercase tracking-wider inline-block">
                 All Applications →
               </Link>
             </li>
@@ -138,10 +158,14 @@ export const Footer: React.FC = () => {
       {/* Bottom Bar */}
       <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
         <p>© 2026 Verado Inc. All rights reserved.</p>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <Link to="/apps/shoecheck/privacy" className="text-violet-400 hover:text-white transition-colors">
+            App Privacy Policies
+          </Link>
+          <span className="text-white/20">•</span>
           <span className="flex items-center gap-1.5 text-slate-400">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-            Vite 8 • React 19 • Tailwind CSS
+            Vite 8 • React 19 • App Subdomains
           </span>
         </div>
       </div>

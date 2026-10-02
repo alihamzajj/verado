@@ -14,7 +14,9 @@ import {
   CheckCircle2, 
   Share2, 
   Info,
-  Maximize2
+  Maximize2,
+  ShieldCheck,
+  ExternalLink
 } from 'lucide-react';
 import { GithubIcon } from '../../components/common/Icons';
 import { useApp } from '../../context/AppContext';
@@ -184,15 +186,33 @@ export const ProjectDetailPage: React.FC = () => {
                 </button>
               )}
 
+              <Link
+                to={`/apps/${project.id}`}
+                className="flex items-center gap-2 px-5 py-3 rounded-full bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/40 font-mono text-xs uppercase tracking-wider transition-all"
+                title="View Dedicated Subdomain Portal"
+              >
+                <Globe className="w-4 h-4 text-violet-400" />
+                <span>App Portal</span>
+              </Link>
+
+              <Link
+                to={`/apps/${project.id}/privacy`}
+                className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/10 font-mono text-xs uppercase tracking-wider transition-all"
+                title="View Official App Store Privacy Policy"
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Privacy Policy</span>
+              </Link>
+
               {project.websiteUrl && (
                 <a
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-full bg-black hover:bg-[#16151B] text-slate-300 hover:text-white border border-white/20 hover:border-violet-400 transition-colors"
-                  title="Product Landing Page"
+                  title="Product External Website"
                 >
-                  <Globe className="w-4 h-4 text-violet-400" />
+                  <ExternalLink className="w-4 h-4 text-violet-400" />
                 </a>
               )}
 
