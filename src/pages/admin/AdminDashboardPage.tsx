@@ -87,14 +87,23 @@ export const AdminDashboardPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 relative z-10">
+        <div className="flex flex-wrap items-center gap-3 shrink-0 relative z-10">
           <Link
             to="/admin/projects/new"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 hover:shadow-violet-600/50 transition-all cursor-pointer active:scale-95 ring-1 ring-violet-400/30"
           >
-            <Plus className="w-4 h-4 text-violet-400" />
+            <Plus className="w-4 h-4 text-white stroke-[2.5]" />
             <span>+ Add Project</span>
           </Link>
+          {isOwner && (
+            <Link
+              to="/admin/users"
+              className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-white/5 hover:bg-white/10 text-white/90 hover:text-white border border-white/15 hover:border-violet-400/40 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer active:scale-95"
+            >
+              <Users className="w-4 h-4 text-violet-400" />
+              <span>+ Add Member</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -285,9 +294,18 @@ export const AdminDashboardPage: React.FC = () => {
               <span className="text-violet-400 font-mono">&#125;</span>
               <span>Recent Projects</span>
             </h3>
-            <Link to="/admin/projects" className="font-mono text-xs uppercase tracking-wider text-violet-400 hover:text-violet-300 font-semibold">
-              Manage All ({projects.length}) →
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/admin/projects/new"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-violet-600/25 hover:bg-violet-600 text-violet-200 hover:text-white border border-violet-500/40 font-mono text-[11px] uppercase tracking-wider font-bold transition-all shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5 text-white" />
+                <span>+ Add Project</span>
+              </Link>
+              <Link to="/admin/projects" className="font-mono text-xs uppercase tracking-wider text-violet-400 hover:text-violet-300 font-semibold">
+                Manage All ({projects.length}) →
+              </Link>
+            </div>
           </div>
 
           <div className="divide-y divide-white/5 overflow-x-auto">

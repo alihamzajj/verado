@@ -137,9 +137,9 @@ export const AdminProjectsPage: React.FC = () => {
           {canAdd && (
             <Link
               to="/admin/projects/new"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-semibold shadow-xl transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 hover:shadow-violet-600/50 transition-all cursor-pointer active:scale-95 ring-1 ring-violet-400/30"
             >
-              <Plus className="w-4 h-4 text-violet-400" />
+              <Plus className="w-4 h-4 text-white stroke-[2.5]" />
               <span>+ Add Project</span>
             </Link>
           )}
