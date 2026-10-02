@@ -58,17 +58,20 @@ export const ContactPage: React.FC = () => {
     <div className="py-6 sm:py-10 px-2 sm:px-4 lg:px-6 max-w-7xl mx-auto min-h-screen space-y-8">
       
       {/* Header Container */}
-      <div className="rounded-[32px] sm:rounded-[40px] bg-[#0F0E11] border border-white/10 p-8 sm:p-14 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="rounded-[32px] sm:rounded-[40px] bg-gradient-to-b from-[#180F2E] via-[#110B20] to-[#0A0714] border border-violet-500/20 p-8 sm:p-14 text-center shadow-2xl shadow-purple-950/40 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-48 bg-gradient-to-b from-violet-500/20 via-purple-600/10 to-transparent blur-3xl pointer-events-none" />
         <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 font-mono text-xs uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-300 font-mono text-xs uppercase tracking-wider shadow-sm">
             <span>&#125;</span>
             <span>Direct Channel</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
-            Get in Touch with Verado
+            Get in Touch with{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-purple-300">
+              Verado
+            </span>
           </h1>
-          <p className="text-sm sm:text-base text-white/70 leading-relaxed font-normal">
+          <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed font-normal">
             Have questions about our apps, technical architecture, or enterprise partnerships? Send us a message or reach out directly.
           </p>
         </div>
