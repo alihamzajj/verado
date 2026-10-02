@@ -23,7 +23,7 @@ export const HomePage: React.FC = () => {
   const featuredProjects = projects.filter(p => p.featured && p.published && !p.isArchived);
   const latestProjects = projects.filter(p => p.published && !p.isArchived).slice(0, 6);
 
-  const [activeHeroApp, setActiveHeroApp] = useState<'brainwave' | 'lenz' | 'shoecheck'>('lenz');
+  const [activeHeroApp, setActiveHeroApp] = useState<'brainwave' | 'lenz' | 'shoecheck'>('brainwave');
 
   const heroAppDetails = {
     brainwave: {
