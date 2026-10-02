@@ -30,9 +30,9 @@
   letter-spacing: 0.08em;
 }
 
-/* Radial Glow - Luminous Amethyst */
+/* Radial Glow from Design Reference */
 .hero-radial-glow {
-  background: radial-gradient(ellipse at 64% 38%, #E4D4FF 0%, #B496F2 20%, #6C42BC 46%, #22103E 68%, #0C0618 84%, #000000 100%);
+  background: radial-gradient(ellipse at 64% 38%, #F5F0FF 0%, #D1C0F8 18%, #6C42BC 46%, #22103E 68%, #0C0618 84%, #000000 100%);
 }
 
 /* Balanced CTA Banner Glow - Smooth deep amethyst without harsh blinding center glare */
