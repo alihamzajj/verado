@@ -110,11 +110,10 @@ export const HomePage: React.FC = () => {
                   <span className="absolute -inset-1 sm:-inset-1.5 rounded-full border border-violet-400/80 animate-[spin_8s_linear_infinite]" />
                   <span className="absolute -top-1 -right-0.5 w-1.5 h-1.5 rounded-full bg-violet-300 shadow-[0_0_6px_#C4B5FD]" />
                 </span>
-                bile Apps That{' '}
+                bile Apps That Makes Your{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-purple-200">
-                  Redefine
-                </span>{' '}
-                Daily Habits
+                  Life Easy
+                </span>
               </h1>
             </div>
 
