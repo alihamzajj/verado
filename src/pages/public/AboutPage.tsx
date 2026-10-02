@@ -14,18 +14,21 @@ export const AboutPage: React.FC = () => {
     <div className="space-y-8">
       
       {/* Hero Header */}
-      <div className="rounded-[36px] bg-[#0F0E11] border border-white/10 p-8 sm:p-14 text-center max-w-7xl mx-auto shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-1/4 w-96 h-36 bg-violet-600/10 blur-[90px] pointer-events-none" />
+      <div className="rounded-[36px] bg-gradient-to-b from-[#180F2E] via-[#110B20] to-[#0A0714] border border-violet-500/20 p-8 sm:p-14 text-center max-w-7xl mx-auto shadow-2xl shadow-purple-950/40 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[650px] h-48 bg-gradient-to-b from-violet-500/20 via-purple-600/10 to-transparent blur-3xl pointer-events-none" />
 
         <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-violet-500/10 text-violet-300 border border-violet-500/20">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-violet-500/15 text-violet-300 border border-violet-500/25 shadow-sm">
             <span>&#125;</span>
             <span>Our Story & Philosophy</span>
           </div>
           <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight">
-            Obsessed with Mobile Craftsmanship
+            Obsessed with{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-purple-300">
+              Mobile Craftsmanship
+            </span>
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-slate-300/90 leading-relaxed font-normal max-w-2xl mx-auto">
             Verado was founded on a simple premise: mobile applications should be blazingly fast, privacy-preserving, and visually unforgettable.
           </p>
         </div>
