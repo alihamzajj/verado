@@ -48,6 +48,12 @@ export const KNOWN_SUBDOMAINS: Record<string, SubdomainAppConfig> = {
     name: 'BrainWave AI Study',
     defaultHost: 'brainwave.verado.dev',
   },
+  spendwise: {
+    subdomain: 'spendwise',
+    projectId: 'spendwise',
+    name: 'SpendWise Manager',
+    defaultHost: 'spendwise.verado.dev',
+  },
   lenz: {
     subdomain: 'lenz',
     projectId: 'lenz',

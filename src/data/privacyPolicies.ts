@@ -309,6 +309,65 @@ export const APP_PRIVACY_POLICIES: Record<string, AppPrivacyPolicy> = {
       },
     ],
   },
+
+  spendwise: {
+    appId: 'spendwise',
+    appName: 'SpendWise Manager',
+    subdomain: 'spendwise',
+    effectiveDate: 'October 1, 2026',
+    lastUpdated: 'October 2026',
+    summary: 'SpendWise Manager uses bank-grade AES-256 enclave encryption. We strictly operate in read-only mode and NEVER sell your financial transactions or net worth data.',
+    dataTypesCollected: [
+      {
+        category: 'Financial Accounts & Ledgers (Read-Only)',
+        items: ['Bank account balances', 'Masked transaction histories', 'Upcoming recurring bills'],
+        purpose: 'Automated expense categorization and net worth runway modeling',
+        storedLocally: true,
+      },
+      {
+        category: 'Receipt OCR Snapshots (Optional)',
+        items: ['Scanned purchase receipts', 'Tax-deduction categorization tags'],
+        purpose: 'Local optical character recognition for expense reconciliation',
+        storedLocally: true,
+      },
+      {
+        category: 'Device Cryptographic Security',
+        items: ['Secure Enclave hardware biometric key tokens (FaceID/Fingerprint)'],
+        purpose: 'Locally unlocking financial database vault',
+        storedLocally: true,
+      },
+    ],
+    sections: [
+      {
+        title: '1. Bank-Grade Encryption & Read-Only Open Banking',
+        content: [
+          'SpendWise Manager is engineered by Verado Mobile Studios Inc. with financial-grade security standards.',
+          'All open banking integrations via Plaid and MX operate under strict SOC-2 Type II certified protocols in read-only mode. SpendWise never requests, stores, or possesses authority to initiate funds transfers or modify bank balances.',
+          'Your bank login credentials are never visible to or stored on Verado servers; authentication occurs directly through tokenized banking gateways.',
+        ],
+      },
+      {
+        title: '2. Zero Data Monetization Commitment',
+        content: [
+          'We believe your financial habits and net worth are strictly private. We NEVER sell, license, or provide your transactional histories, salary data, or credit records to marketers, lenders, or third-party data brokers.',
+        ],
+      },
+      {
+        title: '3. On-Device Categorization & Local Enclave',
+        content: [
+          'Machine learning categorization and burn-rate calculations execute client-side inside the device Secure Enclave with AES-256 local database encryption.',
+          'You may operate SpendWise completely offline by manually logging income and expenses without linking external bank accounts.',
+        ],
+      },
+      {
+        title: '4. Instant Data Purge and Erasure',
+        content: [
+          'You have the legal right under GDPR and CCPA to completely wipe all cached financial records and disconnect banking tokens in 1-click inside Settings > Data Vault > Erase All Data.',
+          'For legal compliance inquiries, reach out to privacy@verado.dev.',
+        ],
+      },
+    ],
+  },
 };
 
 /**

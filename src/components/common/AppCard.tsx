@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Download, ArrowUpRight, Smartphone, Apple } from 'lucide-react';
+import { Star, Download, ArrowUpRight, Smartphone, Apple, Globe, ShieldCheck } from 'lucide-react';
 import { Project } from '../../types';
 
 interface AppCardProps {
@@ -58,9 +58,16 @@ export const AppCard: React.FC<AppCardProps> = ({ project }) => {
 
         {/* Title and descriptions */}
         <div className="space-y-1 mb-3">
-          <div className="flex items-center gap-1.5 text-violet-300 font-mono text-[10px] uppercase tracking-wider font-semibold">
-            <span>&#125;</span>
-            <span>{project.category}</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-violet-300 font-mono text-[10px] uppercase tracking-wider font-semibold">
+              <span>&#125;</span>
+              <span>{project.category}</span>
+            </div>
+            {/* Enhanced Subdomain Pill */}
+            <span className="text-[10px] font-mono text-violet-300/90 bg-violet-950/70 px-2 py-0.5 rounded-full border border-violet-500/30 flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-emerald-400" />
+              <span>{project.id === 'pulsefit-tracker' ? 'pulsefit' : project.id}.verado.dev</span>
+            </span>
           </div>
           <h3 className="text-xl font-bold text-white group-hover:text-violet-200 transition-colors">
             {project.name}
@@ -95,18 +102,38 @@ export const AppCard: React.FC<AppCardProps> = ({ project }) => {
         </div>
 
         <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-1.5 text-xs font-mono text-slate-400">
-            <Download className="w-3.5 h-3.5 text-violet-400" />
-            <span>{project.downloads}</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-mono text-slate-400">
+              <Download className="w-3.5 h-3.5 text-violet-400" />
+              <span>{project.downloads}</span>
+            </div>
+            <Link
+              to={`/apps/${project.id}/privacy`}
+              className="text-[10px] font-mono text-slate-400 hover:text-violet-300 transition-colors px-1.5 py-0.5 rounded hover:bg-white/5"
+              title="Official Privacy Policy"
+            >
+              Privacy
+            </Link>
           </div>
 
-          <Link
-            to={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider bg-black hover:bg-[#16151E] text-white border border-white/20 hover:border-violet-400 transition-all duration-200 shadow-sm"
-          >
-            <span>View Project</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-violet-400" />
-          </Link>
+          <div className="flex items-center gap-1.5">
+            <Link
+              to={`/apps/${project.id}`}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-mono uppercase tracking-wider text-violet-300 hover:text-white bg-violet-950/40 hover:bg-violet-900/60 border border-violet-500/30 transition-all"
+              title="Visit Dedicated App Portal"
+            >
+              <Globe className="w-3 h-3 text-violet-400" />
+              <span>Portal</span>
+            </Link>
+
+            <Link
+              to={`/projects/${project.id}`}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider bg-black hover:bg-[#16151E] text-white border border-white/20 hover:border-violet-400 transition-all duration-200 shadow-sm"
+            >
+              <span>View</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-violet-400" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -95,11 +95,11 @@ export const Footer: React.FC = () => {
             </li>
             <li>
               <div className="flex items-center justify-between group">
-                <Link to="/apps/brainwave-ai" className="hover:text-white transition-colors flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                  <span>BrainWave Study</span>
+                <Link to="/apps/spendwise" className="hover:text-white transition-colors flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                  <span>SpendWise Manager</span>
                 </Link>
-                <Link to="/apps/brainwave-ai/privacy" className="text-[10px] font-mono text-violet-400/80 hover:text-white transition-colors">
+                <Link to="/apps/spendwise/privacy" className="text-[10px] font-mono text-violet-400/80 hover:text-white transition-colors">
                   Privacy
                 </Link>
               </div>
