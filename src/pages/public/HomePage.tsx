@@ -407,7 +407,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* 6. CALL TO ACTION SECTION */}
-      <section className="relative rounded-[36px] sm:rounded-[44px] overflow-hidden hero-radial-glow border border-white/[0.08] p-10 sm:p-16 text-center shadow-2xl shadow-purple-950/30 text-white">
+      <section className="relative rounded-[36px] sm:rounded-[44px] overflow-hidden cta-radial-glow border border-violet-500/20 p-10 sm:p-16 text-center shadow-2xl shadow-purple-950/40 text-white">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-2 text-xs font-mono uppercase tracking-widest text-violet-300 font-semibold">
             <span>&#125;</span>
