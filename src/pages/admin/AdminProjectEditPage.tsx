@@ -761,9 +761,10 @@ export const AdminProjectEditPage: React.FC = () => {
             </Link>
             <button
               type="submit"
-              className="px-7 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl cursor-pointer"
+              className="px-8 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 hover:shadow-violet-600/50 transition-all cursor-pointer active:scale-95 ring-1 ring-violet-400/30 flex items-center gap-2"
             >
-              {isOwner ? (isEditing ? 'Save Changes' : 'Create Application') : (isEditing ? 'Submit Updates for Review' : 'Submit Application for Review')}
+              <Save className="w-4 h-4 text-white" />
+              <span>{isOwner ? (isEditing ? 'Save Changes' : 'Create Application') : (isEditing ? 'Submit Updates for Review' : 'Submit Application for Review')}</span>
             </button>
           </div>
 

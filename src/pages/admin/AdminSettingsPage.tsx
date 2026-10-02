@@ -360,15 +360,18 @@ export const AdminSettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={isSaving}
-            className="px-8 py-3.5 rounded-full bg-black hover:bg-[#16151B] disabled:opacity-60 text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl flex items-center gap-2 cursor-pointer transition-all"
+            className="px-8 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 disabled:opacity-60 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 hover:shadow-violet-600/50 flex items-center gap-2 cursor-pointer transition-all active:scale-95 ring-1 ring-violet-400/30"
           >
             {isSaving ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-violet-400" />
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
                 <span>Saving Changes...</span>
               </>
             ) : (
-              <span>Save & Update Profile</span>
+              <>
+                <Save className="w-4 h-4 text-white" />
+                <span>Save & Update Profile</span>
+              </>
             )}
           </button>
         </div>

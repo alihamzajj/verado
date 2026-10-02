@@ -1429,9 +1429,9 @@ export const AdminUsersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSavePermissions}
-                className="px-6 py-2.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400/50 font-mono text-xs uppercase tracking-wider font-bold shadow-xl transition-all cursor-pointer"
+                className="px-6 py-2.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold shadow-xl shadow-violet-600/30 hover:shadow-violet-600/50 transition-all cursor-pointer active:scale-95 ring-1 ring-violet-400/30 flex items-center gap-2"
               >
-                Save Changes
+                <span>Save Changes</span>
               </button>
             </div>
 
