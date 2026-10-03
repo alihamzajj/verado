@@ -30,9 +30,16 @@
   letter-spacing: 0.08em;
 }
 
-/* Radial Glow from Design Reference */
+/* Radial Glow from Design Reference - High Contrast & Mobile Adaptive */
 .hero-radial-glow {
-  background: radial-gradient(ellipse at 64% 38%, #F5F0FF 0%, #D1C0F8 18%, #6C42BC 46%, #22103E 68%, #0C0618 84%, #000000 100%);
+  background: radial-gradient(ellipse at 68% 40%, rgba(196, 181, 253, 0.65) 0%, rgba(139, 92, 246, 0.4) 22%, #261147 48%, #130726 70%, #080312 88%, #000000 100%);
+}
+
+@media (max-width: 1023px) {
+  .hero-radial-glow {
+    /* On mobile, glow sits behind the media at bottom-center while keeping the text area dark for 100% crystal-clear readability */
+    background: radial-gradient(ellipse at 50% 82%, rgba(139, 92, 246, 0.4) 0%, rgba(59, 28, 120, 0.5) 30%, #150928 60%, #090412 85%, #05020B 100%);
+  }
 }
 
 /* Balanced CTA Banner Glow - Smooth deep amethyst without harsh blinding center glare */
