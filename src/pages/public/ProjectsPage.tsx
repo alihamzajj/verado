@@ -72,44 +72,46 @@ export const ProjectsPage: React.FC = () => {
   const hasActiveFilters = searchQuery !== '' || selectedCategory !== 'All' || selectedPlatform !== 'All';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
       
       {/* Header Banner */}
-      <div className="rounded-[36px] sm:rounded-[44px] overflow-hidden bg-gradient-to-b from-[#180F2E] via-[#110B20] to-[#0A0714] border border-violet-500/20 p-10 sm:p-14 lg:p-16 text-center max-w-7xl mx-auto shadow-2xl shadow-purple-950/40 relative text-white">
+      <div className="rounded-2xl sm:rounded-[36px] lg:rounded-[44px] overflow-hidden bg-gradient-to-b from-[#180F2E] via-[#110B20] to-[#0A0714] border border-violet-500/20 p-5 sm:p-12 lg:p-16 text-center max-w-7xl mx-auto shadow-2xl shadow-purple-950/40 relative text-white">
         
         {/* Soft, gentle ambient amethyst glow from the top */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-52 bg-gradient-to-b from-violet-500/20 via-purple-600/10 to-transparent blur-3xl pointer-events-none" />
 
         {/* Curved Line Arcs & Orbits */}
-        <svg 
-          className="absolute inset-0 w-full h-full pointer-events-none stroke-white/10 fill-none" 
-          viewBox="0 0 1200 700" 
-          preserveAspectRatio="none"
-        >
-          <path d="M -100,180 C 350,20 600,550 1300,120" strokeWidth="1" />
-          <path d="M -50,550 C 400,150 820,120 1250,480" strokeWidth="1" />
-          <ellipse cx="780" cy="280" rx="380" ry="340" transform="rotate(-28 780 280)" strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
-        </svg>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <svg 
+            className="w-full h-full stroke-white/10 fill-none opacity-40 sm:opacity-100" 
+            viewBox="0 0 1200 700" 
+            preserveAspectRatio="none"
+          >
+            <path d="M -100,180 C 350,20 600,550 1300,120" strokeWidth="1" />
+            <path d="M -50,550 C 400,150 820,120 1250,480" strokeWidth="1" />
+            <ellipse cx="780" cy="280" rx="380" ry="340" transform="rotate(-28 780 280)" strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
+          </svg>
+        </div>
 
-        <div className="relative z-10 max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-violet-500/15 text-violet-300 border border-violet-500/25 shadow-sm">
+        <div className="relative z-10 max-w-3xl mx-auto space-y-3 sm:space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] sm:text-xs font-mono uppercase tracking-wider bg-violet-500/15 text-violet-300 border border-violet-500/25 shadow-sm">
             <span>&#125;</span>
             <span>App Portfolio & Marketplace</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.08]">
+          <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] sm:leading-[1.08]">
             Explore Our{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-violet-200 to-purple-300">
               Mobile Apps
             </span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300/90 mt-3 leading-relaxed max-w-2xl mx-auto font-normal">
+          <p className="text-xs sm:text-sm text-slate-300/90 mt-2 sm:mt-3 leading-relaxed max-w-2xl mx-auto font-normal">
             Filter through our native iOS, Android, and cross-platform productions. Click any project to inspect technical architecture, interactive demo videos, and store download links.
           </p>
         </div>
       </div>
 
       {/* Control Bar: Search & Sort */}
-      <div className="p-6 rounded-[28px] bg-[#16161D] border border-white/[0.08] shadow-2xl space-y-4">
+      <div className="p-4 sm:p-6 rounded-2xl sm:rounded-[28px] bg-[#16161D] border border-white/[0.08] shadow-2xl space-y-3 sm:space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
           
           {/* Search Input */}

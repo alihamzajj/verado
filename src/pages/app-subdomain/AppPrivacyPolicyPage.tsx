@@ -40,7 +40,7 @@ export const AppPrivacyPolicyPage: React.FC<AppPrivacyPolicyPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#0A090E] text-slate-100 flex flex-col font-sans selection:bg-violet-600/30">
+    <div className="min-h-screen bg-[#0A090E] text-slate-100 flex flex-col font-sans selection:bg-violet-600/30 w-full max-w-full overflow-x-hidden">
       
       {/* 1. TOP APP-BRANDED NAVBAR */}
       <header className="sticky top-0 z-50 bg-[#0E0D14]/90 backdrop-blur-md border-b border-white/[0.08] px-4 sm:px-8 py-3.5 flex items-center justify-between">

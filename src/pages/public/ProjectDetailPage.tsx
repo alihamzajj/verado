@@ -82,22 +82,22 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8 w-full max-w-full overflow-x-hidden">
       
       {/* Back Navigation Bar */}
-      <div className="flex items-center justify-between p-4 rounded-full bg-[#0F0E11] border border-white/10 shadow-xl">
+      <div className="flex items-center justify-between p-3 sm:p-4 rounded-2xl sm:rounded-full bg-[#0F0E11] border border-white/10 shadow-xl">
         <Link
           to="/projects"
-          className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-slate-400 hover:text-white transition-colors pl-3"
+          className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-slate-400 hover:text-white transition-colors pl-2 sm:pl-3"
         >
           <ArrowLeft className="w-4 h-4 text-violet-400" />
           <span>Back to Catalog</span>
         </Link>
 
-        <div className="flex items-center gap-3 pr-2">
+        <div className="flex items-center gap-2 sm:gap-3 pr-1 sm:pr-2">
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-black border border-white/10 hover:border-violet-400 text-slate-300 hover:text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full bg-black border border-white/10 hover:border-violet-400 text-slate-300 hover:text-white text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5 text-violet-400" />
             <span>Share</span>
@@ -106,16 +106,16 @@ export const ProjectDetailPage: React.FC = () => {
       </div>
 
       {/* Hero Showcase Section */}
-      <div className="rounded-[36px] bg-[#0F0E11] border border-white/10 p-6 sm:p-10 lg:p-12 shadow-2xl relative overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+      <div className="rounded-2xl sm:rounded-[36px] bg-[#0F0E11] border border-white/10 p-4 sm:p-10 lg:p-12 shadow-2xl relative overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-start">
           
           {/* Left Column: App Identity & Main Details */}
-          <div className="lg:col-span-7 space-y-6">
-            <div className="flex items-start gap-5">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row items-start gap-3.5 sm:gap-5">
               <img 
                 src={project.logo} 
                 alt={project.name}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl object-cover ring-1 ring-white/10 shadow-2xl" 
+                className="w-16 h-16 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl object-cover ring-1 ring-white/10 shadow-2xl shrink-0" 
               />
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
@@ -159,13 +159,13 @@ export const ProjectDetailPage: React.FC = () => {
             </p>
 
             {/* Action Download Buttons */}
-            <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="pt-2 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
               {project.platforms.includes('iOS') && (
                 <button
                   onClick={() => handleOpenDownload('ios')}
-                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400 font-mono text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-3 px-5 sm:px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400 font-mono text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer active:scale-95"
                 >
-                  <Apple className="w-5 h-5 fill-current" />
+                  <Apple className="w-5 h-5 fill-current shrink-0" />
                   <div className="text-left">
                     <div className="text-[8px] uppercase tracking-wider leading-none text-slate-400">Download on</div>
                     <div className="text-xs font-bold leading-tight">Apple App Store</div>
@@ -176,9 +176,9 @@ export const ProjectDetailPage: React.FC = () => {
               {project.platforms.includes('Android') && (
                 <button
                   onClick={() => handleOpenDownload('android')}
-                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400 font-mono text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer"
+                  className="w-full sm:w-auto flex items-center justify-center sm:justify-start gap-3 px-5 sm:px-6 py-3 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400 font-mono text-xs uppercase tracking-wider transition-all duration-200 shadow-lg cursor-pointer active:scale-95"
                 >
-                  <Smartphone className="w-5 h-5 text-emerald-400" />
+                  <Smartphone className="w-5 h-5 text-emerald-400 shrink-0" />
                   <div className="text-left">
                     <div className="text-[8px] uppercase tracking-wider leading-none text-slate-400">Get it on</div>
                     <div className="text-xs font-bold leading-tight">Google Play</div>
@@ -188,19 +188,19 @@ export const ProjectDetailPage: React.FC = () => {
 
               <Link
                 to={`/apps/${project.id}`}
-                className="flex items-center gap-2 px-5 py-3 rounded-full bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/40 font-mono text-xs uppercase tracking-wider transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/40 font-mono text-xs uppercase tracking-wider transition-all active:scale-95 text-center"
                 title="View Dedicated Subdomain Portal"
               >
-                <Globe className="w-4 h-4 text-violet-400" />
+                <Globe className="w-4 h-4 text-violet-400 shrink-0" />
                 <span>App Portal</span>
               </Link>
 
               <Link
                 to={`/apps/${project.id}/privacy`}
-                className="flex items-center gap-2 px-5 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/10 font-mono text-xs uppercase tracking-wider transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/10 font-mono text-xs uppercase tracking-wider transition-all active:scale-95 text-center"
                 title="View Official App Store Privacy Policy"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>Privacy Policy</span>
               </Link>
 

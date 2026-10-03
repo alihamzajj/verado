@@ -33,10 +33,10 @@ import { detectAppSubdomain } from './utils/subdomain';
 // Layout wrapper for Public Website
 const PublicLayout: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0B10] text-slate-100 p-2 sm:p-4 md:p-6 transition-colors duration-300">
-      <div className="flex-1 flex flex-col max-w-[1440px] w-full mx-auto space-y-4 sm:space-y-6">
+    <div className="min-h-screen flex flex-col bg-[#0B0B10] text-slate-100 p-2 sm:p-4 md:p-6 transition-colors duration-300 w-full max-w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col max-w-[1440px] w-full mx-auto space-y-4 sm:space-y-6 min-w-0">
         <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <Outlet />
         </main>
         <Footer />
