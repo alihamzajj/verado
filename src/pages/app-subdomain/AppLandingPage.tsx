@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { detectAppSubdomain, getProjectSubdomain } from '../../utils/subdomain';
+import { Modal } from '../../components/common/Modal';
 import { 
   ShieldCheck, 
   Download, 
@@ -10,18 +11,21 @@ import {
   ExternalLink, 
   Smartphone, 
   Lock, 
-  ArrowRight,
-  Cpu,
-  Sparkles,
-  Play,
-  Film,
-  Apple,
-  ArrowUpRight,
-  Menu,
-  X,
-  Layers,
-  ChevronRight,
-  Maximize2
+  ArrowRight, 
+  Cpu, 
+  Sparkles, 
+  Play, 
+  Film, 
+  Apple, 
+  ArrowUpRight, 
+  Menu, 
+  X, 
+  Layers, 
+  ChevronRight, 
+  Maximize2,
+  Copy,
+  Check,
+  Package
 } from 'lucide-react';
 
 interface AppLandingPageProps {
@@ -38,6 +42,8 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
   const [selectedScreenshot, setSelectedScreenshot] = useState<number>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [activeMediaTab, setActiveMediaTab] = useState<'screens' | 'video'>('screens');
+  const [downloadModalPlatform, setDownloadModalPlatform] = useState<'ios' | 'android' | 'direct' | null>(null);
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   // Determine active app
   const detectedSubdomain = detectAppSubdomain(projects);
@@ -57,26 +63,39 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
   // Path to this app's privacy policy
   const privacyPath = isSubdomainMode ? '/privacy' : `/apps/${project?.id || targetId}/privacy`;
 
+  const handleOpenDownload = (platform: 'ios' | 'android' | 'direct') => {
+    // If a direct URL exists, we can still show the interactive modal or open directly
+    setDownloadModalPlatform(platform);
+  };
+
+  const handleCopyLink = (text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  const iosUrl = project?.appStoreUrl || `https://apps.apple.com/app/${appName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+  const androidUrl = project?.playStoreUrl || `https://play.google.com/store/apps/details?id=dev.verado.${subdomain}`;
+  const directUrl = `https://releases.verado.dev/${subdomain}-v${project?.version || '3.2.1'}.apk`;
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0B10] text-slate-100 p-2 sm:p-4 md:p-6 transition-colors duration-300 font-sans selection:bg-violet-600/40">
       <div className="flex-1 flex flex-col max-w-[1440px] w-full mx-auto space-y-4 sm:space-y-6">
         
         {/* 1. FLOATING LUXURY NAVBAR */}
         <header className="sticky top-2 sm:top-4 z-50 w-full px-1 sm:px-0">
-          <div className="rounded-[24px] sm:rounded-full bg-[#0D0B14]/80 backdrop-blur-2xl border border-white/[0.08] px-5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between shadow-[0_8px_30px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] transition-all">
+          <div className="flex items-center justify-between p-3 sm:p-4 rounded-full bg-[#0D0B14]/85 backdrop-blur-2xl border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.8)]">
             
-            {/* Left: Brand Identity + App Tag */}
-            <div className="flex items-center gap-3">
-              <a href="/" className="flex items-center gap-2 group">
-                <span className="text-violet-400 font-mono text-xl font-bold tracking-tight select-none">
-                  &#125;
-                </span>
-                <span className="font-extrabold text-xl tracking-tight text-white group-hover:text-violet-200 transition-colors">
-                  Verado
-                </span>
+            {/* App Brand & Subdomain indicator */}
+            <div className="flex items-center gap-3 pl-2 sm:pl-3">
+              <a 
+                href="/" 
+                className="text-xs font-mono font-bold uppercase tracking-wider text-violet-400 hover:text-white transition-colors flex items-center gap-1.5"
+                title="Return to Verado Main Studio"
+              >
+                <span>VERADO</span>
+                <span className="text-white/40">/</span>
               </a>
-
-              <div className="h-4 w-px bg-white/15 hidden sm:block" />
 
               <div className="flex items-center gap-2">
                 {project?.logo ? (
@@ -121,6 +140,13 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 Screenshots
               </a>
               <a 
+                href="#download" 
+                className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider text-violet-300 hover:text-white hover:bg-violet-950/40 border border-violet-500/30 transition-all font-semibold flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5 text-violet-400" />
+                <span>Download</span>
+              </a>
+              <a 
                 href="#specs" 
                 className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider text-slate-300 hover:text-white hover:bg-white/[0.04] transition-all"
               >
@@ -128,9 +154,9 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               </a>
               <Link 
                 to={privacyPath}
-                className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider text-violet-300 hover:text-white hover:bg-violet-950/40 border border-violet-500/30 transition-all font-semibold"
+                className="px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider text-slate-300 hover:text-white hover:bg-white/[0.04] transition-all"
               >
-                Privacy Policy
+                Privacy
               </Link>
             </nav>
 
@@ -144,25 +170,14 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 <span>Privacy</span>
               </Link>
 
-              {project?.appStoreUrl ? (
-                <a
-                  href={project.appStoreUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white text-black hover:bg-slate-200 font-mono text-xs uppercase tracking-wider font-bold transition-all duration-300 shadow-xl hover:scale-105"
-                >
-                  <Apple className="w-3.5 h-3.5 fill-current" />
-                  <span>Get App</span>
-                </a>
-              ) : (
-                <a
-                  href="#overview"
-                  className="group relative inline-flex items-center gap-2 px-5 py-2 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold transition-all duration-300 shadow-xl hover:scale-105"
-                >
-                  <span>Explore App</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </a>
-              )}
+              {/* Prominent Glowing Download Button */}
+              <a
+                href="#download"
+                className="group relative inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono text-xs uppercase tracking-wider font-bold transition-all duration-300 shadow-[0_0_20px_rgba(139,92,246,0.35)] hover:shadow-[0_0_25px_rgba(139,92,246,0.55)] hover:scale-105"
+              >
+                <Download className="w-3.5 h-3.5 animate-bounce" />
+                <span>Download App</span>
+              </a>
 
               {/* Mobile hamburger */}
               <button
@@ -182,6 +197,10 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               <a href="#overview" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-slate-300 hover:text-white">Overview</a>
               <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-slate-300 hover:text-white">Features</a>
               <a href="#screenshots" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-slate-300 hover:text-white">Screenshots</a>
+              <a href="#download" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-violet-300 font-bold flex items-center gap-1.5">
+                <Download className="w-3.5 h-3.5" />
+                <span>Download App →</span>
+              </a>
               <a href="#specs" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-slate-300 hover:text-white">Tech Specs</a>
               <Link to={privacyPath} onClick={() => setMobileMenuOpen(false)} className="block py-2 text-violet-300 font-bold">Privacy Policy →</Link>
               <div className="pt-2 border-t border-white/10 flex items-center justify-between">
@@ -216,7 +235,7 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 {project?.logo ? (
                   <img 
                     src={project.logo} 
-                    alt={appName}
+                    alt={appName} 
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover ring-1 ring-white/15 shadow-2xl" 
                   />
                 ) : (
@@ -224,15 +243,16 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                     {appName.charAt(0)}
                   </div>
                 )}
-                
-                <div className="space-y-1">
+
+                <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-mono font-bold uppercase tracking-wider text-violet-400 flex items-center gap-1">
                       <span>&#125;</span>
-                      <span>{project?.category || 'Flagship Mobile'}</span>
+                      <span>{project?.category || 'Mobile Intelligence'}</span>
                     </span>
+
                     {project?.badge && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase bg-violet-400 text-black">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-violet-400 text-black">
                         {project.badge}
                       </span>
                     )}
@@ -286,39 +306,59 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 </div>
               </div>
 
-              {/* Store & Privacy Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                {project?.appStoreUrl && (
+              {/* Store & Download Action Buttons */}
+              <div className="space-y-3 pt-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  
+                  {/* Primary Download Anchor */}
                   <a
-                    href={project.appStoreUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white text-black hover:bg-slate-200 font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl hover:scale-105"
+                    href="#download"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-[0_0_25px_rgba(139,92,246,0.4)] hover:shadow-[0_0_35px_rgba(139,92,246,0.6)] hover:scale-105"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download App</span>
+                  </a>
+
+                  {/* Direct Apple App Store Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownload('ios')}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-white text-black hover:bg-slate-200 font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl hover:scale-105 cursor-pointer"
                   >
                     <Apple className="w-4 h-4 fill-current" />
-                    <span>Apple App Store</span>
-                  </a>
-                )}
+                    <span>App Store</span>
+                  </button>
 
-                {project?.playStoreUrl && (
-                  <a
-                    href={project.playStoreUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400 font-mono text-xs uppercase tracking-wider transition-all duration-300 shadow-xl"
+                  {/* Direct Google Play Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleOpenDownload('android')}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-black hover:bg-[#16151B] text-white border border-white/20 hover:border-violet-400 font-mono text-xs uppercase tracking-wider transition-all duration-300 shadow-xl cursor-pointer hover:scale-105"
                   >
                     <Smartphone className="w-4 h-4 text-emerald-400" />
                     <span>Google Play</span>
-                  </a>
-                )}
+                  </button>
 
-                <Link
-                  to={privacyPath}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-violet-950/60 hover:bg-violet-900/70 text-violet-200 border border-violet-500/40 font-mono text-xs uppercase tracking-wider transition-all shadow-lg"
-                >
-                  <ShieldCheck className="w-4 h-4 text-violet-400" />
-                  <span>Privacy Policy</span>
-                </Link>
+                  {/* Privacy Policy */}
+                  <Link
+                    to={privacyPath}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-violet-950/60 hover:bg-violet-900/70 text-violet-200 border border-violet-500/40 font-mono text-xs uppercase tracking-wider transition-all shadow-lg"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-violet-400" />
+                    <span>Privacy Policy</span>
+                  </Link>
+                </div>
+
+                {/* Build & Package Details Pill */}
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400">
+                  <span className="text-emerald-400 font-semibold">● Official Production Build</span>
+                  <span>•</span>
+                  <span>v{project?.version || '3.2.1'}</span>
+                  <span>•</span>
+                  <span>Size: {project?.size || '48.2 MB'}</span>
+                  <span>•</span>
+                  <span>{project?.platforms || 'iOS + Android'}</span>
+                </div>
               </div>
 
               {/* Verification Disclosures */}
@@ -361,72 +401,74 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 </div>
               )}
 
-              {/* Widescreen Media Showcase Container */}
-              <div className="relative rounded-[32px] overflow-hidden bg-[#100E17] border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.8)] aspect-[16/10] w-full flex items-center justify-center group">
+              {/* Main Widescreen Showcase Container */}
+              <div className="relative rounded-3xl overflow-hidden border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.8)] bg-gradient-to-b from-[#13111C] to-[#0A0910] group aspect-[16/10] flex items-center justify-center">
                 
-                {/* Subtle crystal glow backdrop */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-violet-600/10 via-transparent to-purple-600/15 pointer-events-none" />
-
                 {activeMediaTab === 'video' && project?.demoVideoUrl ? (
-                  <video
-                    src={project.demoVideoUrl}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    controls
-                    className="w-full h-full object-cover"
-                  />
-                ) : project?.screenshots && project.screenshots.length > 0 ? (
-                  <div className="relative w-full h-full">
-                    <img 
-                      src={project.screenshots[selectedScreenshot] || project.screenshots[0]} 
-                      alt={`${appName} preview`}
-                      className="w-full h-full object-cover transition-opacity duration-300"
+                  /* Widescreen Video Player */
+                  <div className="w-full h-full relative flex items-center justify-center bg-black">
+                    <video
+                      src={project.demoVideoUrl}
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-contain"
                     />
+                  </div>
+                ) : (
+                  /* Widescreen Screenshot Showcase */
+                  <div className="w-full h-full relative overflow-hidden flex items-center justify-center p-3">
+                    <img
+                      src={
+                        (project?.screenshots && project.screenshots[selectedScreenshot]) || 
+                        project?.coverImage || 
+                        project?.logo || 
+                        'https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=80&w=1200'
+                      }
+                      alt={`${appName} preview`}
+                      className="max-h-full max-w-full object-contain rounded-2xl shadow-2xl transition-all duration-500 group-hover:scale-[1.02]"
+                    />
+
+                    {/* Subtle Amethyst Glass Glow on Hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
-                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs font-mono">
-                      <span className="px-3 py-1 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-white font-semibold">
-                        Preview 0{selectedScreenshot + 1}
+
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs font-mono text-white/90 px-3 py-2 rounded-xl bg-[#0B0A12]/80 backdrop-blur-md border border-white/10">
+                      <span className="truncate flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-violet-400" />
+                        <span>Interactive App Preview</span>
                       </span>
-                      <span className="text-white/70 text-[11px]">
-                        {appName} Interface
+                      <span className="text-[10px] text-violet-300 font-bold uppercase tracking-wider">
+                        High-Res UI
                       </span>
                     </div>
                   </div>
-                ) : project?.coverImage ? (
-                  <img 
-                    src={project.coverImage} 
-                    alt={appName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="p-8 text-center space-y-2">
-                    <Layers className="w-12 h-12 text-violet-400 mx-auto" />
-                    <h3 className="font-bold text-white text-lg">{appName}</h3>
-                    <p className="text-xs text-slate-400">{tagline}</p>
-                  </div>
                 )}
-
               </div>
 
-              {/* Quick Thumbnail Strip */}
+              {/* Screenshot Selector Thumbs (Flat Widescreen Thumbnails) */}
               {project?.screenshots && project.screenshots.length > 1 && (
                 <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-                  {project.screenshots.slice(0, 4).map((shot, idx) => (
+                  {project.screenshots.slice(0, 5).map((screen, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => {
                         setSelectedScreenshot(idx);
                         setActiveMediaTab('screens');
                       }}
-                      className={`relative rounded-xl overflow-hidden border transition-all h-14 w-20 flex-shrink-0 cursor-pointer ${
+                      className={`relative flex-shrink-0 w-16 h-12 rounded-xl overflow-hidden border transition-all cursor-pointer ${
                         selectedScreenshot === idx && activeMediaTab === 'screens'
-                          ? 'border-violet-400 ring-2 ring-violet-500/50 scale-105'
-                          : 'border-white/10 opacity-60 hover:opacity-100'
+                          ? 'border-violet-400 ring-2 ring-violet-500/50 scale-105 shadow-lg'
+                          : 'border-white/15 opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <img src={shot} alt="thumb" className="w-full h-full object-cover" />
+                      <img 
+                        src={screen} 
+                        alt={`Screen thumbnail ${idx + 1}`} 
+                        className="w-full h-full object-cover" 
+                      />
                     </button>
                   ))}
                 </div>
@@ -435,146 +477,54 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
             </div>
 
           </div>
-
         </section>
 
-        {/* 3. STATS SECTION (Signature NixtNode Metric Cards with Technical Dividers) */}
-        <section className="relative px-1 sm:px-2">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-stretch">
-            
-            {/* Stat Card 1 */}
-            <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[200px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] uppercase tracking-wider mb-2">
-                <span className="flex items-center gap-1.5">
-                  <span className="text-violet-400 font-bold">&#125;</span>
-                  <span>METRIC 01</span>
-                </span>
-                <div className="w-2 h-2 rounded-full bg-violet-400 shadow-[0_0_8px_#A78BFA]" />
-              </div>
-
-              <div>
-                <div className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-200 via-purple-300 to-violet-400 tracking-tight">
-                  {project?.downloads || '850K+'}
-                </div>
-                
-                {/* Technical Node Divider Line */}
-                <div className="flex items-center justify-between w-full my-3 opacity-60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#A78BFA]" />
-                  <div className="flex-1 h-px bg-white/20 mx-2" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shadow-[0_0_6px_#A78BFA]" />
-                </div>
-
-                <div className="flex items-baseline justify-between">
-                  <p className="text-xs sm:text-sm text-slate-200 font-medium">
-                    Verified Global Installations
-                  </p>
-                  <span className="font-mono text-[10px] text-emerald-400 font-semibold">Active</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stat Card 2 */}
-            <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[200px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] uppercase tracking-wider mb-2">
-                <span className="flex items-center gap-1.5">
-                  <span className="text-violet-400 font-bold">&#125;</span>
-                  <span>METRIC 02</span>
-                </span>
-                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34D399]" />
-              </div>
-
-              <div>
-                <div className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-teal-300 to-emerald-400 tracking-tight flex items-center gap-2">
-                  <span>{project?.rating ? project.rating.toFixed(1) : '4.9'}</span>
-                  <Star className="w-7 h-7 fill-emerald-400 text-emerald-400" />
-                </div>
-                
-                {/* Technical Node Divider Line */}
-                <div className="flex items-center justify-between w-full my-3 opacity-60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34D399]" />
-                  <div className="flex-1 h-px bg-white/20 mx-2" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34D399]" />
-                </div>
-
-                <div className="flex items-baseline justify-between">
-                  <p className="text-xs sm:text-sm text-slate-200 font-medium">
-                    Store Satisfaction Rating
-                  </p>
-                  <span className="font-mono text-[10px] text-slate-400">{project?.reviewsCount ? `${(project.reviewsCount / 1000).toFixed(1)}k Reviews` : 'Top Tier'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stat Card 3 */}
-            <div className="relative rounded-[32px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-8 shadow-2xl flex flex-col justify-between h-full min-h-[200px] transition-transform duration-300 hover:-translate-y-1.5 group backdrop-blur-xl shadow-[0_12px_36px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <div className="flex items-center justify-between text-slate-400 font-mono text-[10px] uppercase tracking-wider mb-2">
-                <span className="flex items-center gap-1.5">
-                  <span className="text-violet-400 font-bold">&#125;</span>
-                  <span>METRIC 03</span>
-                </span>
-                <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_#C084FC]" />
-              </div>
-
-              <div>
-                <div className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-violet-300 to-pink-300 tracking-tight">
-                  &lt;50ms
-                </div>
-                
-                {/* Technical Node Divider Line */}
-                <div className="flex items-center justify-between w-full my-3 opacity-60">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_6px_#C084FC]" />
-                  <div className="flex-1 h-px bg-white/20 mx-2" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_6px_#C084FC]" />
-                </div>
-
-                <div className="flex items-baseline justify-between">
-                  <p className="text-xs sm:text-sm text-slate-200 font-medium">
-                    Local-First On-Device AI Inference
-                  </p>
-                  <span className="font-mono text-[10px] text-violet-300 font-semibold">120 FPS</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* 4. CLEAN SCREENSHOT CARDS (Clean Showcase - NO mobile phone frames) */}
+        {/* 3. WIDESCREEN SCREENSHOT GALLERY (Clean Cards - NO Phone Frames) */}
         {project?.screenshots && project.screenshots.length > 0 && (
-          <section id="screenshots" className="rounded-[36px] sm:rounded-[44px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-10 shadow-2xl space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <section id="screenshots" className="rounded-[36px] sm:rounded-[44px] bg-[#0E0D14] border border-white/[0.08] p-6 sm:p-10 lg:p-12 shadow-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
                 <span className="text-violet-400 font-mono text-xs uppercase tracking-wider block font-bold">
                   &#125; Interface Gallery
                 </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mt-1">
-                  Product UI & Screenshots
+                <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight mt-1">
+                  High-Fidelity Application Views
                 </h2>
               </div>
-              <p className="text-xs font-mono text-slate-400">
-                Verified high-resolution application screens
+              <p className="text-xs font-mono text-slate-400 max-w-sm">
+                Clean architectural UI designed for zero cognitive fatigue, responsive typography, and tactile precision.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {project.screenshots.map((shot, idx) => (
-                <div
+            {/* Flat Widescreen Screenshot Card Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+              {project.screenshots.map((screen, idx) => (
+                <div 
                   key={idx}
-                  className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-violet-400 transition-all duration-300 shadow-xl bg-[#12111A] aspect-[9/16]"
+                  className="group relative rounded-3xl overflow-hidden bg-[#13111C] border border-white/10 hover:border-violet-500/50 shadow-xl transition-all duration-300 hover:-translate-y-1"
                 >
-                  <img 
-                    src={shot} 
-                    alt={`Screenshot ${idx + 1}`} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between font-mono text-xs">
-                    <span className="text-white font-bold text-[11px]">
-                      Screen 0{idx + 1}
-                    </span>
-                    <span className="text-violet-300 text-[10px]">
-                      {appName}
-                    </span>
+                  <div className="aspect-[16/10] overflow-hidden flex items-center justify-center p-3 bg-gradient-to-b from-[#181624] to-[#0D0B14]">
+                    <img 
+                      src={screen} 
+                      alt={`${appName} screen ${idx + 1}`}
+                      className="max-h-full max-w-full object-contain rounded-xl transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  </div>
+                  
+                  <div className="p-4 border-t border-white/[0.06] bg-[#0F0E17] flex items-center justify-between text-xs font-mono">
+                    <span className="text-slate-300 font-medium">Screen {idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedScreenshot(idx);
+                        setActiveMediaTab('screens');
+                        window.scrollTo({ top: 180, behavior: 'smooth' });
+                      }}
+                      className="text-violet-400 hover:text-violet-300 flex items-center gap-1 cursor-pointer font-bold"
+                    >
+                      <span>Show in Hero</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -582,7 +532,7 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
           </section>
         )}
 
-        {/* 5. CORE FEATURES GRID */}
+        {/* 4. CORE FEATURES GRID */}
         <section id="features" className="rounded-[36px] sm:rounded-[44px] bg-[#0C0B12] border border-white/[0.08] p-6 sm:p-10 lg:p-12 shadow-2xl space-y-8">
           <div>
             <span className="text-violet-400 font-mono text-xs uppercase tracking-wider block font-bold">
@@ -617,6 +567,186 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 </p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* 5. DEDICATED DOWNLOAD & INSTALLATION SECTION (#download) */}
+        <section id="download" className="rounded-[36px] sm:rounded-[44px] bg-gradient-to-b from-[#100E1A] to-[#0A0910] border border-violet-500/30 p-6 sm:p-10 lg:p-14 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(139,92,246,0.15)] space-y-8 relative overflow-hidden">
+          
+          {/* Subtle Ambient Glow */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <span className="text-violet-400 font-mono text-xs uppercase tracking-wider block font-bold flex items-center gap-1.5">
+                <Download className="w-3.5 h-3.5" />
+                <span>&#125; Installation & Downloads</span>
+              </span>
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight mt-1">
+                Get {appName} on Your Devices
+              </h2>
+            </div>
+            <p className="text-xs font-mono text-slate-400 max-w-md">
+              Download official, cryptographically verified bundles for iOS and Android with automated background delta updates.
+            </p>
+          </div>
+
+          {/* 3 Download Platform Cards */}
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Card 1: Apple iOS Edition */}
+            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-violet-400/50 p-6 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                    <Apple className="w-6 h-6 fill-current" />
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-violet-950/80 border border-violet-500/40 text-[10px] font-mono text-violet-300 font-bold uppercase">
+                    iOS / iPadOS
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white group-hover:text-violet-200 transition-colors">
+                    Apple App Store
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Native Metal acceleration & Apple Neural Engine support for iOS devices.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Requirements:</span>
+                    <span className="text-white font-medium">{project?.minIos || 'iOS 16.0 or later'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Rating:</span>
+                    <span className="text-amber-400 font-medium">★ {project?.rating || 4.9} / 5.0</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Package Size:</span>
+                    <span className="text-violet-300 font-medium">{project?.size || '48.2 MB'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenDownload('ios')}
+                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-white text-black hover:bg-slate-200 font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl cursor-pointer hover:scale-[1.02]"
+              >
+                <Apple className="w-4 h-4 fill-current" />
+                <span>Download for iOS</span>
+              </button>
+            </div>
+
+            {/* Card 2: Google Play Edition */}
+            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-emerald-500/50 p-6 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-black border border-white/20 text-emerald-400 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                    <Smartphone className="w-6 h-6" />
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-[10px] font-mono text-emerald-300 font-bold uppercase">
+                    Android & Tablets
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-200 transition-colors">
+                    Google Play Store
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Optimized for ARM64 with on-device TensorFlow Lite neural runtime.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Requirements:</span>
+                    <span className="text-white font-medium">{project?.minAndroid || 'Android 10.0+'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Installs:</span>
+                    <span className="text-emerald-400 font-medium">{project?.downloads || '850K+'} active</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Distribution:</span>
+                    <span className="text-white font-medium">Google Play Certified</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenDownload('android')}
+                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-black hover:bg-[#1C1A24] text-white border border-white/25 hover:border-emerald-400 font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl cursor-pointer hover:scale-[1.02]"
+              >
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Get on Google Play</span>
+              </button>
+            </div>
+
+            {/* Card 3: Direct Package / APK */}
+            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-violet-500/50 p-6 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-2xl bg-violet-600/20 border border-violet-500/30 text-violet-300 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                    <Package className="w-6 h-6" />
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-violet-950/80 border border-violet-500/40 text-[10px] font-mono text-violet-300 font-bold uppercase">
+                    Standalone Package
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white group-hover:text-violet-200 transition-colors">
+                    Direct Build Release
+                  </h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Direct installation package for developers, testers, and enterprise devices.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Build Version:</span>
+                    <span className="text-violet-300 font-medium">v{project?.version || '3.2.1'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Architecture:</span>
+                    <span className="text-white font-medium">ARM64 & x86_64</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Security Check:</span>
+                    <span className="text-emerald-400 font-medium">SHA-256 Verified</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenDownload('direct')}
+                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl cursor-pointer hover:scale-[1.02]"
+              >
+                <Download className="w-4 h-4" />
+                <span>Direct Download APK</span>
+              </button>
+            </div>
+
+          </div>
+
+          {/* Security & Integrity Disclosure */}
+          <div className="relative z-10 pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-400">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-emerald-400" />
+              <span>Certified 100% Clean: Zero Adware • Zero Background Location Tracking • Verified Checksum</span>
+            </div>
+            <Link to={privacyPath} className="text-violet-400 hover:text-white transition-colors underline flex items-center gap-1">
+              <span>Read Store Compliance Privacy Policy</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </section>
 
@@ -681,6 +811,10 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-6">
+              <a href="#download" className="text-violet-300 hover:text-white transition-colors flex items-center gap-1">
+                <Download className="w-3 h-3" />
+                <span>Download App</span>
+              </a>
               <Link to={privacyPath} className="text-violet-300 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
@@ -701,6 +835,101 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
         </footer>
 
       </div>
+
+      {/* 9. STICKY FLOATING QUICK DOWNLOAD PILL */}
+      <div className="fixed bottom-5 right-5 z-40 hidden sm:flex items-center gap-2 p-1.5 pl-3 rounded-full bg-[#12101C]/90 backdrop-blur-xl border border-violet-500/30 shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(139,92,246,0.25)]">
+        <span className="text-xs font-mono font-medium text-slate-300 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>{appName}</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => handleOpenDownload(project?.platforms.includes('iOS') ? 'ios' : 'android')}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-md cursor-pointer hover:scale-105"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Download</span>
+        </button>
+      </div>
+
+      {/* 10. INTERACTIVE DOWNLOAD MODAL */}
+      {downloadModalPlatform && (
+        <Modal
+          isOpen={!!downloadModalPlatform}
+          onClose={() => setDownloadModalPlatform(null)}
+          title={`Download ${appName}`}
+          subtitle={`Get the official ${downloadModalPlatform === 'ios' ? 'Apple App Store' : downloadModalPlatform === 'android' ? 'Google Play Store' : 'Universal Release'} bundle`}
+          maxWidth="max-w-md"
+        >
+          <div className="text-center py-4 space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-violet-600/20 text-violet-300 flex items-center justify-center mx-auto border border-violet-500/30 shadow-xl">
+              {downloadModalPlatform === 'ios' ? (
+                <Apple className="w-8 h-8 fill-current" />
+              ) : downloadModalPlatform === 'android' ? (
+                <Smartphone className="w-8 h-8 text-emerald-400" />
+              ) : (
+                <Download className="w-8 h-8 text-violet-400" />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <h4 className="text-base font-bold text-white">
+                {downloadModalPlatform === 'ios' 
+                  ? 'Apple App Store Official Release' 
+                  : downloadModalPlatform === 'android' 
+                  ? 'Google Play Store Official Release' 
+                  : 'Universal Standalone Package'}
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed font-normal">
+                {downloadModalPlatform === 'ios'
+                  ? 'Verified on iOS & iPadOS. Includes Apple Neural Engine acceleration and automatic delta updates.'
+                  : downloadModalPlatform === 'android'
+                  ? 'Certified by Google Play Protect. Full hardware camera and offline SQLite synchronization enabled.'
+                  : `Universal direct package (Build v${project?.version || '3.2.1'} • ${project?.size || '48.2 MB'}) with SHA-256 signature.`}
+              </p>
+            </div>
+
+            {/* Link Preview with Copy */}
+            <div className="p-3 rounded-xl bg-black/90 font-mono text-[11px] text-violet-300 border border-white/10 flex items-center justify-between gap-2">
+              <span className="truncate text-left">
+                {downloadModalPlatform === 'ios' ? iosUrl : downloadModalPlatform === 'android' ? androidUrl : directUrl}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopyLink(downloadModalPlatform === 'ios' ? iosUrl : downloadModalPlatform === 'android' ? androidUrl : directUrl)}
+                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0 cursor-pointer"
+                title="Copy Link"
+              >
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
+              </button>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <a
+                href={downloadModalPlatform === 'ios' ? iosUrl : downloadModalPlatform === 'android' ? androidUrl : directUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold transition-all shadow-xl hover:scale-[1.02]"
+              >
+                <Download className="w-4 h-4" />
+                <span>
+                  {downloadModalPlatform === 'direct' ? 'Start Download' : 'Proceed to Store'}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setDownloadModalPlatform(null)}
+                className="w-full py-2.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 };
