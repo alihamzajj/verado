@@ -24,8 +24,7 @@ import {
   ChevronRight, 
   Maximize2,
   Copy,
-  Check,
-  Package
+  Check
 } from 'lucide-react';
 
 interface AppLandingPageProps {
@@ -42,7 +41,7 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
   const [selectedScreenshot, setSelectedScreenshot] = useState<number>(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [activeMediaTab, setActiveMediaTab] = useState<'screens' | 'video'>('screens');
-  const [downloadModalPlatform, setDownloadModalPlatform] = useState<'ios' | 'android' | 'direct' | null>(null);
+  const [downloadModalPlatform, setDownloadModalPlatform] = useState<'ios' | 'android' | null>(null);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   // Determine active app
@@ -63,8 +62,7 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
   // Path to this app's privacy policy
   const privacyPath = isSubdomainMode ? '/privacy' : `/apps/${project?.id || targetId}/privacy`;
 
-  const handleOpenDownload = (platform: 'ios' | 'android' | 'direct') => {
-    // If a direct URL exists, we can still show the interactive modal or open directly
+  const handleOpenDownload = (platform: 'ios' | 'android') => {
     setDownloadModalPlatform(platform);
   };
 
@@ -76,7 +74,6 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
 
   const iosUrl = project?.appStoreUrl || `https://apps.apple.com/app/${appName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   const androidUrl = project?.playStoreUrl || `https://play.google.com/store/apps/details?id=dev.verado.${subdomain}`;
-  const directUrl = `https://releases.verado.dev/${subdomain}-v${project?.version || '3.2.1'}.apk`;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0B10] text-slate-100 p-2 sm:p-4 md:p-6 transition-colors duration-300 font-sans selection:bg-violet-600/40">
@@ -351,11 +348,11 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
 
                 {/* Build & Package Details Pill */}
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400">
-                  <span className="text-emerald-400 font-semibold">● Official Production Build</span>
+                  <span className="text-emerald-400 font-semibold">● Official Store Releases</span>
                   <span>•</span>
                   <span>v{project?.version || '3.2.1'}</span>
                   <span>•</span>
-                  <span>Size: {project?.size || '48.2 MB'}</span>
+                  <span>Package Size: {project?.size || '48.2 MB'}</span>
                   <span>•</span>
                   <span>{project?.platforms || 'iOS + Android'}</span>
                 </div>
@@ -570,7 +567,7 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
           </div>
         </section>
 
-        {/* 5. DEDICATED DOWNLOAD & INSTALLATION SECTION (#download) */}
+        {/* 5. DEDICATED STORE DOWNLOAD & INSTALLATION SECTION (#download) */}
         <section id="download" className="rounded-[36px] sm:rounded-[44px] bg-gradient-to-b from-[#100E1A] to-[#0A0910] border border-violet-500/30 p-6 sm:p-10 lg:p-14 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(139,92,246,0.15)] space-y-8 relative overflow-hidden">
           
           {/* Subtle Ambient Glow */}
@@ -580,22 +577,22 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
             <div>
               <span className="text-violet-400 font-mono text-xs uppercase tracking-wider block font-bold flex items-center gap-1.5">
                 <Download className="w-3.5 h-3.5" />
-                <span>&#125; Installation & Downloads</span>
+                <span>&#125; Official Store Downloads</span>
               </span>
               <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight mt-1">
-                Get {appName} on Your Devices
+                Get {appName} on iOS & Android
               </h2>
             </div>
             <p className="text-xs font-mono text-slate-400 max-w-md">
-              Download official, cryptographically verified bundles for iOS and Android with automated background delta updates.
+              Download official, certified releases directly through the Apple App Store and Google Play Store with automated delta updates.
             </p>
           </div>
 
-          {/* 3 Download Platform Cards */}
-          <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* 2 Official Store Platform Cards: Apple App Store & Google Play */}
+          <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             
             {/* Card 1: Apple iOS Edition */}
-            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-violet-400/50 p-6 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
+            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-violet-400/50 p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
@@ -607,21 +604,21 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white group-hover:text-violet-200 transition-colors">
+                  <h3 className="text-xl font-bold text-white group-hover:text-violet-200 transition-colors">
                     Apple App Store
                   </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Native Metal acceleration & Apple Neural Engine support for iOS devices.
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    Native Metal acceleration & Apple Neural Engine support engineered specifically for iPhone and iPad devices.
                   </p>
                 </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
+                <div className="space-y-2 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500">Requirements:</span>
                     <span className="text-white font-medium">{project?.minIos || 'iOS 16.0 or later'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Rating:</span>
+                    <span className="text-slate-500">Store Rating:</span>
                     <span className="text-amber-400 font-medium">★ {project?.rating || 4.9} / 5.0</span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -637,12 +634,12 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-white text-black hover:bg-slate-200 font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl cursor-pointer hover:scale-[1.02]"
               >
                 <Apple className="w-4 h-4 fill-current" />
-                <span>Download for iOS</span>
+                <span>Download on App Store</span>
               </button>
             </div>
 
             {/* Card 2: Google Play Edition */}
-            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-emerald-500/50 p-6 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
+            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-emerald-500/50 p-6 sm:p-8 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="w-12 h-12 rounded-2xl bg-black border border-white/20 text-emerald-400 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
@@ -654,25 +651,25 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-200 transition-colors">
+                  <h3 className="text-xl font-bold text-white group-hover:text-emerald-200 transition-colors">
                     Google Play Store
                   </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Optimized for ARM64 with on-device TensorFlow Lite neural runtime.
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    Optimized for 64-bit Android architecture with on-device TensorFlow Lite and adaptive background workers.
                   </p>
                 </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
+                <div className="space-y-2 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500">Requirements:</span>
                     <span className="text-white font-medium">{project?.minAndroid || 'Android 10.0+'}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Installs:</span>
+                    <span className="text-slate-500">Total Installs:</span>
                     <span className="text-emerald-400 font-medium">{project?.downloads || '850K+'} active</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Distribution:</span>
+                    <span className="text-slate-500">Certification:</span>
                     <span className="text-white font-medium">Google Play Certified</span>
                   </div>
                 </div>
@@ -688,60 +685,13 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               </button>
             </div>
 
-            {/* Card 3: Direct Package / APK */}
-            <div className="rounded-[30px] bg-[#141221] border border-white/10 hover:border-violet-500/50 p-6 flex flex-col justify-between space-y-6 transition-all duration-300 hover:-translate-y-1 shadow-xl group">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-2xl bg-violet-600/20 border border-violet-500/30 text-violet-300 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
-                    <Package className="w-6 h-6" />
-                  </div>
-                  <span className="px-3 py-1 rounded-full bg-violet-950/80 border border-violet-500/40 text-[10px] font-mono text-violet-300 font-bold uppercase">
-                    Standalone Package
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold text-white group-hover:text-violet-200 transition-colors">
-                    Direct Build Release
-                  </h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Direct installation package for developers, testers, and enterprise devices.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5 pt-2 border-t border-white/[0.08] text-xs font-mono text-slate-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Build Version:</span>
-                    <span className="text-violet-300 font-medium">v{project?.version || '3.2.1'}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Architecture:</span>
-                    <span className="text-white font-medium">ARM64 & x86_64</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Security Check:</span>
-                    <span className="text-emerald-400 font-medium">SHA-256 Verified</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleOpenDownload('direct')}
-                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 shadow-xl cursor-pointer hover:scale-[1.02]"
-              >
-                <Download className="w-4 h-4" />
-                <span>Direct Download APK</span>
-              </button>
-            </div>
-
           </div>
 
           {/* Security & Integrity Disclosure */}
           <div className="relative z-10 pt-4 border-t border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-400">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-emerald-400" />
-              <span>Certified 100% Clean: Zero Adware • Zero Background Location Tracking • Verified Checksum</span>
+              <span>Certified 100% Clean: Zero Adware • Zero Background Location Tracking • Official App Stores Only</span>
             </div>
             <Link to={privacyPath} className="text-violet-400 hover:text-white transition-colors underline flex items-center gap-1">
               <span>Read Store Compliance Privacy Policy</span>
@@ -858,17 +808,15 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
           isOpen={!!downloadModalPlatform}
           onClose={() => setDownloadModalPlatform(null)}
           title={`Download ${appName}`}
-          subtitle={`Get the official ${downloadModalPlatform === 'ios' ? 'Apple App Store' : downloadModalPlatform === 'android' ? 'Google Play Store' : 'Universal Release'} bundle`}
+          subtitle={`Get the official ${downloadModalPlatform === 'ios' ? 'Apple App Store' : 'Google Play Store'} release`}
           maxWidth="max-w-md"
         >
           <div className="text-center py-4 space-y-5">
             <div className="w-16 h-16 rounded-2xl bg-violet-600/20 text-violet-300 flex items-center justify-center mx-auto border border-violet-500/30 shadow-xl">
               {downloadModalPlatform === 'ios' ? (
                 <Apple className="w-8 h-8 fill-current" />
-              ) : downloadModalPlatform === 'android' ? (
-                <Smartphone className="w-8 h-8 text-emerald-400" />
               ) : (
-                <Download className="w-8 h-8 text-violet-400" />
+                <Smartphone className="w-8 h-8 text-emerald-400" />
               )}
             </div>
 
@@ -876,29 +824,25 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
               <h4 className="text-base font-bold text-white">
                 {downloadModalPlatform === 'ios' 
                   ? 'Apple App Store Official Release' 
-                  : downloadModalPlatform === 'android' 
-                  ? 'Google Play Store Official Release' 
-                  : 'Universal Standalone Package'}
+                  : 'Google Play Store Official Release'}
               </h4>
               <p className="text-xs text-slate-400 leading-relaxed font-normal">
                 {downloadModalPlatform === 'ios'
                   ? 'Verified on iOS & iPadOS. Includes Apple Neural Engine acceleration and automatic delta updates.'
-                  : downloadModalPlatform === 'android'
-                  ? 'Certified by Google Play Protect. Full hardware camera and offline SQLite synchronization enabled.'
-                  : `Universal direct package (Build v${project?.version || '3.2.1'} • ${project?.size || '48.2 MB'}) with SHA-256 signature.`}
+                  : 'Certified by Google Play Protect. Full hardware camera and offline SQLite synchronization enabled.'}
               </p>
             </div>
 
             {/* Link Preview with Copy */}
             <div className="p-3 rounded-xl bg-black/90 font-mono text-[11px] text-violet-300 border border-white/10 flex items-center justify-between gap-2">
               <span className="truncate text-left">
-                {downloadModalPlatform === 'ios' ? iosUrl : downloadModalPlatform === 'android' ? androidUrl : directUrl}
+                {downloadModalPlatform === 'ios' ? iosUrl : androidUrl}
               </span>
               <button
                 type="button"
-                onClick={() => handleCopyLink(downloadModalPlatform === 'ios' ? iosUrl : downloadModalPlatform === 'android' ? androidUrl : directUrl)}
+                onClick={() => handleCopyLink(downloadModalPlatform === 'ios' ? iosUrl : androidUrl)}
                 className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors flex-shrink-0 cursor-pointer"
-                title="Copy Link"
+                title="Copy Store Link"
               >
                 {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
               </button>
@@ -906,15 +850,13 @@ export const AppLandingPage: React.FC<AppLandingPageProps> = ({
 
             <div className="space-y-2 pt-1">
               <a
-                href={downloadModalPlatform === 'ios' ? iosUrl : downloadModalPlatform === 'android' ? androidUrl : directUrl}
+                href={downloadModalPlatform === 'ios' ? iosUrl : androidUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-violet-600 hover:bg-violet-500 text-white font-mono text-xs uppercase tracking-wider font-bold transition-all shadow-xl hover:scale-[1.02]"
               >
                 <Download className="w-4 h-4" />
-                <span>
-                  {downloadModalPlatform === 'direct' ? 'Start Download' : 'Proceed to Store'}
-                </span>
+                <span>Open in {downloadModalPlatform === 'ios' ? 'App Store' : 'Google Play'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </a>
 
